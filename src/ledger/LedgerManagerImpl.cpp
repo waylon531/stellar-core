@@ -526,6 +526,7 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
 
     LedgerTxn ltx(mApp.getLedgerTxnRoot());
     auto header = ltx.loadHeader();
+    auto const ledgerVersionBeforeUpgrades = header.current().ledgerVersion;
     ++header.current().ledgerSeq;
     header.current().previousLedgerHash = mLastClosedLedger.hash;
     CLOG(DEBUG, "Ledger") << "starting closeLedger() on ledgerSeq="
@@ -541,15 +542,14 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
     std::shared_ptr<AbstractTxSetFrameForApply> txSet = ledgerData.getTxSet();
 
     // If we do not support ledger version, we can't apply that ledger, fail!
-    if (header.current().ledgerVersion >
-        mApp.getConfig().LEDGER_PROTOCOL_VERSION)
+    if (ledgerVersionBeforeUpgrades > mApp.getConfig().LEDGER_PROTOCOL_VERSION)
     {
         CLOG(ERROR, "Ledger")
-            << "Unknown ledger version: " << header.current().ledgerVersion;
+            << "Unknown ledger version: " << ledgerVersionBeforeUpgrades;
         CLOG(ERROR, "Ledger") << UPGRADE_STELLAR_CORE;
         throw std::runtime_error(
             fmt::format("cannot apply ledger with not supported version: {}",
-                        header.current().ledgerVersion));
+                        ledgerVersionBeforeUpgrades));
     }
 
     if (txSet->previousLedgerHash() != getLastClosedLedgerHeader().hash)
