@@ -112,6 +112,12 @@ getTestDate(int day, int month, int year)
     return getTestDateTime(day, month, year, 0, 0, 0);
 }
 
+time_t
+getTestDate(int day, int month, int year)
+{
+    return getTestDateTime(day, month, year, 0, 0, 0);
+}
+
 std::tm
 getTestDateTimeStruct(int day, int month, int year, int hour, int minute,
                       int second)
