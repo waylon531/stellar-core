@@ -616,7 +616,7 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
     // Assert that the transaction applies did not change the ledger version
     // (only ledger updates, performed later in this method, should be able to
     // do that).
-    auto const& ledgerVersionAfterApplies =
+    auto const ledgerVersionAfterApplies =
         ltx.loadHeader().current().ledgerVersion;
     if (ledgerVersionAfterApplies != ledgerVersionBeforeUpgrades)
     {
