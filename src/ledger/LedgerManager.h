@@ -44,6 +44,7 @@ class LedgerManager
     static const uint32_t GENESIS_LEDGER_BASE_RESERVE;
     static const uint32_t GENESIS_LEDGER_MAX_TX_SIZE;
     static const int64_t GENESIS_LEDGER_TOTAL_COINS;
+    static const uint32_t LAST_PROTOCOL_VERSION_WITH_ISSUE_622;
 
     enum State
     {
