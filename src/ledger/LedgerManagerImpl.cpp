@@ -76,6 +76,7 @@ const uint32_t LedgerManager::GENESIS_LEDGER_BASE_FEE = 100;
 const uint32_t LedgerManager::GENESIS_LEDGER_BASE_RESERVE = 100000000;
 const uint32_t LedgerManager::GENESIS_LEDGER_MAX_TX_SIZE = 100;
 const int64_t LedgerManager::GENESIS_LEDGER_TOTAL_COINS = 1000000000000000000;
+const uint32_t LedgerManager::LAST_PROTOCOL_VERSION_WITH_ISSUE_622 = 13;
 
 std::unique_ptr<LedgerManager>
 LedgerManager::create(Application& app)
@@ -579,7 +580,12 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
     }
 
     auto const& sv = ledgerData.getValue();
-    header.current().scpValue = sv;
+    // In protocol versions which suffered from protocol issue #622,
+    // we updated scpValue before the transactions were applied.
+    if (ledgerVersionBeforeUpgrades <= LAST_PROTOCOL_VERSION_WITH_ISSUE_622)
+    {
+        header.current().scpValue = sv;
+    }
 
     // In addition to the _canonical_ LedgerResultSet hashed into the
     // LedgerHeader, we optionally collect an even-more-fine-grained record of
@@ -606,6 +612,32 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
     TransactionResultSet txResultSet;
     txResultSet.results.reserve(txs.size());
     applyTransactions(txs, ltx, txResultSet, ledgerCloseMeta);
+
+    // Assert that the transaction applies did not change the ledger version
+    // (only ledger updates, performed later in this method, should be able to
+    // do that).
+    auto const& ledgerVersionAfterApplies =
+        ltx.loadHeader().current().ledgerVersion;
+    if (ledgerVersionAfterApplies != ledgerVersionBeforeUpgrades)
+    {
+        CLOG(ERROR, "Ledger") << "Internal logic error: ledger version " <<
+            "changed during transaction applies, from " <<
+            ledgerVersionBeforeUpgrades << " to " <<
+            ledgerVersionAfterApplies;
+        CLOG(ERROR, "Ledger") << REPORT_INTERNAL_BUG;
+
+        throw std::logic_error(fmt::format(
+            "ledger version changed during transaction applies ({}->{})",
+            ledgerVersionBeforeUpgrades,
+            ledgerVersionAfterApplies));
+    }
+
+    // In protocol versions which do not suffer from protocol issue #622,
+    // we update scpValue after the transactions are applied.
+    if (ledgerVersionBeforeUpgrades > LAST_PROTOCOL_VERSION_WITH_ISSUE_622)
+    {
+        ltx.loadHeader().current().scpValue = sv;
+    }
 
     ltx.loadHeader().current().txSetResultHash =
         sha256(xdr::xdr_to_opaque(txResultSet));
