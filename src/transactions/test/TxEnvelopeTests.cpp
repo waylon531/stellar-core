@@ -1469,6 +1469,29 @@ TEST_CASE("txenvelope", "[tx][envelope]")
                         applyCheck(txFrame, *app);
                         REQUIRE(txFrame->getResultCode() == txTOO_LATE);
                     }
+
+                    SECTION("accepted on time, but closed later "
+                            "(protocol issue 622)")
+                    {
+                        auto const ledgerVersion = app->getLedgerManager().
+                            getLastClosedLedgerHeader().header.ledgerVersion;
+                        bool const issue_622_present = (ledgerVersion <=
+                            app->getLedgerManager().
+                                LAST_PROTOCOL_VERSION_WITH_ISSUE_622);
+                        time_t const max_seconds = 30;
+                        txFrame = root.tx(
+                            {payment(a1.getPublicKey(), paymentAmount)});
+                        setMinTime(txFrame, 0);
+                        setMaxTime(txFrame, start + max_seconds);
+                        auto resultMeta = closeLedgerOn(*app, 3, 1, 7, 2014, 0,
+                                                        0, max_seconds + 1,
+                                                        {txFrame});
+                        REQUIRE(resultMeta.size() == 1);
+                        TransactionResultCode const code =
+                            resultMeta.begin()->first.result.result.code();
+                        REQUIRE(code == (issue_622_present ?
+                            txTOO_LATE : txSUCCESS));
+                    }
                 });
             }
 
