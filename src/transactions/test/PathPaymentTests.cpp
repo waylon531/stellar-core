@@ -67,11 +67,7 @@ assetPathToString(const std::deque<Asset>& assets)
 
 TEST_CASE("pathpayment", "[tx][pathpayment]")
 {
-    auto cfg = getTestConfig();
-
-    // Do our setup in version 1 so that for_all_versions below does not
-    // try to downgrade us from >1 to 1.
-    cfg.USE_CONFIG_FOR_GENESIS = false;
+    auto const& cfg = getTestConfig();
 
     VirtualClock clock;
     auto app = createTestApplication(clock, cfg);
