@@ -13,6 +13,7 @@
 #include "main/Application.h"
 #include "test/TestExceptions.h"
 #include "test/TestUtils.h"
+#include "test/TxTests.h"
 #include "test/test.h"
 #include "transactions/OperationFrame.h"
 #include "transactions/TransactionFrame.h"
