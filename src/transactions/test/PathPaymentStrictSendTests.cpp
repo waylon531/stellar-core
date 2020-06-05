@@ -112,8 +112,14 @@ checkClaimedOffers(std::vector<ClaimOfferAtom> const& actual,
 
 TEST_CASE("pathpayment strict send", "[tx][pathpayment]")
 {
+    auto cfg = getTestConfig();
+
+    // Do our setup in version 1 so that for_all_versions below does not
+    // try to downgrade us from >1 to 1.
+    cfg.USE_CONFIG_FOR_GENESIS = false;
+
     VirtualClock clock;
-    auto app = createTestApplication(clock, getTestConfig());
+    auto app = createTestApplication(clock, cfg);
     app->start();
 
     auto& lm = app->getLedgerManager();
