@@ -1476,10 +1476,6 @@ TEST_CASE("txenvelope", "[tx][envelope]")
                             app->getLedgerManager()
                                 .getLastClosedLedgerHeader()
                                 .header.ledgerVersion;
-                        bool const issue_622_present =
-                            (ledgerVersion <=
-                             app->getLedgerManager()
-                                 .LAST_PROTOCOL_VERSION_WITH_ISSUE_622);
                         time_t const max_seconds = 30;
                         txFrame = root.tx(
                             {payment(a1.getPublicKey(), paymentAmount)});
@@ -1490,8 +1486,7 @@ TEST_CASE("txenvelope", "[tx][envelope]")
                         REQUIRE(resultMeta.size() == 1);
                         TransactionResultCode const code =
                             resultMeta.begin()->first.result.result.code();
-                        REQUIRE(code ==
-                                (issue_622_present ? txTOO_LATE : txSUCCESS));
+                        REQUIRE(code == txTOO_LATE);
                     }
                 });
             }
