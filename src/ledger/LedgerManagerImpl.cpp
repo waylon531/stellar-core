@@ -76,7 +76,6 @@ const uint32_t LedgerManager::GENESIS_LEDGER_BASE_FEE = 100;
 const uint32_t LedgerManager::GENESIS_LEDGER_BASE_RESERVE = 100000000;
 const uint32_t LedgerManager::GENESIS_LEDGER_MAX_TX_SIZE = 100;
 const int64_t LedgerManager::GENESIS_LEDGER_TOTAL_COINS = 1000000000000000000;
-const uint32_t LedgerManager::LAST_PROTOCOL_VERSION_WITH_ISSUE_622 = 13;
 
 std::unique_ptr<LedgerManager>
 LedgerManager::create(Application& app)
@@ -580,12 +579,7 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
     }
 
     auto const& sv = ledgerData.getValue();
-    // In protocol versions which suffered from protocol issue #622,
-    // we updated scpValue before the transactions were applied.
-    if (ledgerVersionBeforeUpgrades <= LAST_PROTOCOL_VERSION_WITH_ISSUE_622)
-    {
-        header.current().scpValue = sv;
-    }
+    header.current().scpValue = sv;
 
     // In addition to the _canonical_ LedgerResultSet hashed into the
     // LedgerHeader, we optionally collect an even-more-fine-grained record of
