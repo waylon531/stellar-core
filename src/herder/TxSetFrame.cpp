@@ -285,8 +285,16 @@ TxSetFrame::checkOrTrim(Application& app,
                         std::vector<TransactionFrameBasePtr>& trimmed,
                         bool justCheck)
 {
+    return checkOrTrim(app.getLedgerTxnRoot(), trimmed, justCheck);
+}
+
+bool
+TxSetFrame::checkOrTrim(AbstractLedgerTxnParent& parent,
+                        std::vector<TransactionFrameBasePtr>& trimmed,
+                        bool justCheck)
+{
     ZoneScoped;
-    LedgerTxn ltx(app.getLedgerTxnRoot());
+    LedgerTxn ltx(parent);
 
     std::unordered_map<AccountID, int64_t> accountFeeMap;
     auto accountTxMap = buildAccountTxQueues();
@@ -368,10 +376,16 @@ TxSetFrame::checkOrTrim(Application& app,
 std::vector<TransactionFrameBasePtr>
 TxSetFrame::trimInvalid(Application& app)
 {
+    return trimInvalid(app.getLedgerTxnRoot());
+}
+
+std::vector<TransactionFrameBasePtr>
+TxSetFrame::trimInvalid(AbstractLedgerTxnParent& parent)
+{
     ZoneScoped;
     std::vector<TransactionFrameBasePtr> trimmed;
     sortForHash();
-    checkOrTrim(app, trimmed, false);
+    checkOrTrim(parent, trimmed, false);
     return trimmed;
 }
 

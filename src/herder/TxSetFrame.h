@@ -5,6 +5,7 @@
 // of this distribution or at http://www.apache.org/licenses/LICENSE-2.0
 
 #include "ledger/LedgerHashUtils.h"
+#include "ledger/LedgerTxn.h"
 #include "overlay/StellarXDR.h"
 #include "transactions/TransactionFrame.h"
 #include <deque>
@@ -50,6 +51,10 @@ class TxSetFrame : public AbstractTxSetFrameForApply
                      std::vector<TransactionFrameBasePtr>& trimmed,
                      bool justCheck);
 
+    bool checkOrTrim(AbstractLedgerTxnParent& parent,
+                     std::vector<TransactionFrameBasePtr>& trimmed,
+                     bool justCheck);
+
     std::unordered_map<AccountID, AccountTransactionQueue>
     buildAccountTxQueues();
     friend struct SurgeCompare;
@@ -80,7 +85,10 @@ class TxSetFrame : public AbstractTxSetFrameForApply
 
     // remove invalid transaction from this set and return those removed
     // transactions
+    std::vector<TransactionFrameBasePtr>
+    trimInvalid(AbstractLedgerTxnParent& parent);
     std::vector<TransactionFrameBasePtr> trimInvalid(Application& app);
+
     void surgePricingFilter(Application& app);
 
     void removeTx(TransactionFrameBasePtr tx);
