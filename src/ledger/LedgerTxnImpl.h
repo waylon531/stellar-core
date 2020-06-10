@@ -764,12 +764,16 @@ class LedgerTxnRoot::Impl
     // deleteObjectsModifiedOnOrAfterLedger has no exception safety guarantees.
     void deleteObjectsModifiedOnOrAfterLedger(uint32_t ledger) const;
 
-    // dropAccounts, dropData, dropOffers, and dropTrustLines have no exception
-    // safety guarantees.
+    // dropAccounts, dropData, dropOffers, dropTrustLines,
+    // convertAccountExtensionsToOpaqueXDR, and
+    // convertTrustLineExtensionsToOpaqueXDR have no exception safety
+    // guarantees.
     void dropAccounts();
     void dropData();
     void dropOffers();
     void dropTrustLines();
+    void convertAccountExtensionsToOpaqueXDR();
+    void convertTrustLineExtensionsToOpaqueXDR();
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     void resetForFuzzer();

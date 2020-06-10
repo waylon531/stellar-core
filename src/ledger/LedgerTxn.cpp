@@ -18,7 +18,9 @@
 #include "xdr/Stellar-ledger-entries.h"
 #include "xdrpp/marshal.h"
 #include <Tracy.hpp>
+#include <fmt/format.h>
 #include <soci.h>
+#include <stdexcept>
 
 namespace stellar
 {
@@ -1540,6 +1542,20 @@ LedgerTxn::dropTrustLines()
     throw std::runtime_error("called dropTrustLines on non-root LedgerTxn");
 }
 
+void
+LedgerTxn::convertAccountExtensionsToOpaqueXDR()
+{
+    throw std::runtime_error(
+        fmt::format("called {} on non-root LedgerTxn", __func__));
+}
+
+void
+LedgerTxn::convertTrustLineExtensionsToOpaqueXDR()
+{
+    throw std::runtime_error(
+        fmt::format("called {} on non-root LedgerTxn", __func__));
+}
+
 double
 LedgerTxn::getPrefetchHitRate() const
 {
@@ -2243,6 +2259,18 @@ void
 LedgerTxnRoot::dropTrustLines()
 {
     mImpl->dropTrustLines();
+}
+
+void
+LedgerTxnRoot::convertAccountExtensionsToOpaqueXDR()
+{
+    mImpl->convertAccountExtensionsToOpaqueXDR();
+}
+
+void
+LedgerTxnRoot::convertTrustLineExtensionsToOpaqueXDR()
+{
+    mImpl->convertAccountExtensionsToOpaqueXDR();
 }
 
 uint32_t

@@ -14,6 +14,7 @@
 #include "util/types.h"
 #include "xdrpp/marshal.h"
 #include <Tracy.hpp>
+#include <fmt/format.h>
 
 namespace stellar
 {
@@ -484,6 +485,13 @@ LedgerTxnRoot::Impl::dropAccounts()
            "signers            TEXT,"
            "lastmodified       INT          NOT NULL"
            ");";
+}
+
+void
+LedgerTxnRoot::Impl::convertAccountExtensionsToOpaqueXDR()
+{
+    throw std::logic_error(
+        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
 }
 
 class BulkLoadAccountsOperation

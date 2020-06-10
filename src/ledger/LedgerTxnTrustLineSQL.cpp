@@ -10,6 +10,7 @@
 #include "util/XDROperators.h"
 #include "util/types.h"
 #include <Tracy.hpp>
+#include <fmt/format.h>
 
 namespace stellar
 {
@@ -424,6 +425,13 @@ LedgerTxnRoot::Impl::dropTrustLines()
            "lastmodified INT             NOT NULL,"
            "PRIMARY KEY  (accountid, issuer, assetcode)"
            ");";
+}
+
+void
+LedgerTxnRoot::Impl::convertTrustLineExtensionsToOpaqueXDR()
+{
+    throw std::logic_error(
+        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
 }
 
 class BulkLoadTrustLinesOperation
