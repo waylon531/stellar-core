@@ -695,6 +695,9 @@ class LedgerTxnRoot::Impl
     std::shared_ptr<LedgerEntry const>
     loadTrustLine(LedgerKey const& key) const;
 
+    void copyIndividualAccountExtensionFieldsToOpaqueXDR();
+    void copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
+
     void bulkApply(BulkLedgerEntryChangeAccumulator& bleca,
                    size_t bufferThreshold, LedgerTxnConsistency cons);
     void bulkUpsertAccounts(std::vector<EntryIterator> const& entries);

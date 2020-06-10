@@ -98,6 +98,13 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
     return std::make_shared<LedgerEntry const>(std::move(le));
 }
 
+void
+LedgerTxnRoot::Impl::copyIndividualAccountExtensionFieldsToOpaqueXDR()
+{
+    throw std::logic_error(
+        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
+}
+
 std::vector<InflationWinner>
 LedgerTxnRoot::Impl::loadInflationWinners(size_t maxWinners,
                                           int64_t minBalance) const
@@ -490,8 +497,11 @@ LedgerTxnRoot::Impl::dropAccounts()
 void
 LedgerTxnRoot::Impl::convertAccountExtensionsToOpaqueXDR()
 {
-    throw std::logic_error(
-        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
+    soci::session& sess = mDatabase.getSession();
+    sess << "ALTER TABLE accounts ADD extension TEXT";
+    copyIndividualAccountExtensionFieldsToOpaqueXDR();
+    sess << "ALTER TABLE accounts DROP COLUMN buyingliabilities";
+    sess << "ALTER TABLE accounts DROP COLUMN sellingliabilities";
 }
 
 class BulkLoadAccountsOperation
