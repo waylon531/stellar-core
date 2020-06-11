@@ -695,8 +695,6 @@ class LedgerTxnRoot::Impl
     std::shared_ptr<LedgerEntry const>
     loadTrustLine(LedgerKey const& key) const;
 
-    void copyLiabilitiesExtensionFieldsToOpaqueXDR();
-    void convertLiabilitiesExtensionFieldsToOpaqueXDR();
     void copyIndividualAccountExtensionFieldsToOpaqueXDR();
     void copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
 

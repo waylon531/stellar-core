@@ -102,8 +102,49 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
 void
 LedgerTxnRoot::Impl::copyIndividualAccountExtensionFieldsToOpaqueXDR()
 {
-    throw std::logic_error(
-        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
+    CLOG(INFO, "Ledger") << __func__ << ": updating account extension schema";
+
+    std::string accountIDStrKey;
+    Liabilities liabilities;
+    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
+
+    auto prep_select = mDatabase.getPreparedStatement(
+        "SELECT "
+        "accountid, buyingliabilities, sellingliabilities "
+        "FROM accounts WHERE "
+        "buyingliabilities IS NOT NULL"
+        " OR "
+        "sellingliabilities IS NOT NULL");
+    auto& st_select = prep_select.statement();
+    st_select.exchange(soci::into(accountIDStrKey));
+    st_select.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
+    st_select.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+    st_select.define_and_bind();
+    {
+        auto timer = mDatabase.getSelectTimer("account-ext-to-opaque");
+        st_select.execute(true);
+    }
+
+    size_t numAccountsUpdated = 0;
+    for (; st_select.got_data(); st_select.fetch())
+    {
+        // We've only selected accounts which have at least one of
+        // buying liabilities or selling liabilities present, and if
+        // either is present, then both should be.
+        assert(buyingLiabilitiesInd == soci::i_ok);
+        assert(sellingLiabilitiesInd == soci::i_ok);
+        std::string opaqueExtension(
+            decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
+        auto prep_update = mDatabase.getPreparedStatement(
+            "UPDATE accounts SET extension = :ext WHERE accountID = :id");
+        auto& st_update = prep_update.statement();
+        st_update.exchange(soci::use(opaqueExtension, "ext"));
+        st_update.exchange(soci::use(accountIDStrKey, "id"));
+        ++numAccountsUpdated;
+    }
+
+    CLOG(INFO, "Ledger") << __func__ << ": updated " << numAccountsUpdated
+                         << " accounts with liabilities";
 }
 
 std::vector<InflationWinner>
