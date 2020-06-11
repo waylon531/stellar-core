@@ -764,8 +764,8 @@ class LedgerTxnRoot::Impl
     // deleteObjectsModifiedOnOrAfterLedger has no exception safety guarantees.
     void deleteObjectsModifiedOnOrAfterLedger(uint32_t ledger) const;
 
-    // dropAccounts, dropData, dropOffers, and dropTrustLines have
-    // no exception safety guarantees.
+    // dropAccounts, dropData, dropOffers, and dropTrustLines have no exception
+    // safety guarantees.
     void dropAccounts();
     void dropData();
     void dropOffers();
