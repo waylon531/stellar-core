@@ -2310,12 +2310,10 @@ LedgerTxnRoot::Impl::copyLiabilitiesExtensionFieldsToOpaqueXDR()
 }
 
 void
-LedgerTxnRoot::Impl::convertLiabilitiesExtensionFieldsToOpaqueXDR(
-    const LedgerEntryType let)
+LedgerTxnRoot::Impl::convertLiabilitiesExtensionFieldsToOpaqueXDR()
 {
     soci::session& sess = mDatabase.getSession();
-    sess << "ALTER TABLE " + tableFromLedgerEntryType(let) +
-                " ADD extension TEXT";
+    sess << "ALTER TABLE accounts ADD extension TEXT";
     copyLiabilitiesExtensionFieldsToOpaqueXDR();
     sess << "ALTER TABLE accounts DROP COLUMN buyingliabilities";
     sess << "ALTER TABLE accounts DROP COLUMN sellingliabilities";

@@ -99,6 +99,13 @@ LedgerTxnRoot::Impl::loadTrustLine(LedgerKey const& key) const
     return std::make_shared<LedgerEntry>(std::move(le));
 }
 
+void
+LedgerTxnRoot::Impl::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
+{
+    throw std::logic_error(
+        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
+}
+
 class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
 {
     Database& mDB;
@@ -431,7 +438,11 @@ LedgerTxnRoot::Impl::dropTrustLines()
 void
 LedgerTxnRoot::Impl::convertTrustLineExtensionsToOpaqueXDR()
 {
-    convertLiabilitiesExtensionFieldsToOpaqueXDR(LedgerEntryType::TRUSTLINE);
+    soci::session& sess = mDatabase.getSession();
+    sess << "ALTER TABLE trustlines ADD extension TEXT";
+    copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
+    sess << "ALTER TABLE trustlines DROP COLUMN buyingliabilities";
+    sess << "ALTER TABLE trustlines DROP COLUMN sellingliabilities";
 }
 
 class BulkLoadTrustLinesOperation
