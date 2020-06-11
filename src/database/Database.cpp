@@ -321,7 +321,8 @@ Database::copyIndividualAccountExtensionFieldsToOpaqueXDR()
     CLOG(INFO, "Ledger") << __func__ << ": updating account extension schema";
 
     std::string accountIDStrKey;
-    Liabilities liabilities;
+    AccountEntry::_ext_t extension;
+    extension.v(1);
     soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
 
     auto prep_select =
@@ -333,8 +334,10 @@ Database::copyIndividualAccountExtensionFieldsToOpaqueXDR()
                              "sellingliabilities IS NOT NULL");
     auto& st_select = prep_select.statement();
     st_select.exchange(soci::into(accountIDStrKey));
-    st_select.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-    st_select.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+    st_select.exchange(
+        soci::into(extension.v1().liabilities.buying, buyingLiabilitiesInd));
+    st_select.exchange(
+        soci::into(extension.v1().liabilities.selling, sellingLiabilitiesInd));
     st_select.define_and_bind();
     {
         auto timer = getSelectTimer("account-ext-to-opaque");
@@ -350,7 +353,7 @@ Database::copyIndividualAccountExtensionFieldsToOpaqueXDR()
         assert(buyingLiabilitiesInd == soci::i_ok);
         assert(sellingLiabilitiesInd == soci::i_ok);
         std::string opaqueExtension(
-            decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
+            decoder::encode_b64(xdr::xdr_to_opaque(extension)));
         auto prep_update = getPreparedStatement(
             "UPDATE accounts SET extension = :ext WHERE accountID = :id");
         auto& st_update = prep_update.statement();
