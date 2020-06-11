@@ -140,8 +140,20 @@ LedgerTxnRoot::Impl::copyIndividualAccountExtensionFieldsToOpaqueXDR()
         auto& st_update = prep_update.statement();
         st_update.exchange(soci::use(opaqueExtension, "ext"));
         st_update.exchange(soci::use(accountIDStrKey, "id"));
+        st_update.define_and_bind();
+        st_update.execute(true);
+        auto affected_rows = st_update.get_affected_rows();
+        if (affected_rows != 1)
+        {
+            throw std::runtime_error(
+                fmt::format("{}: updating account {} affected {} row(s)",
+                            __func__, accountIDStrKey, affected_rows));
+        }
         ++numAccountsUpdated;
     }
+
+    mEntryCache.clear();
+    mBestOffersCache.clear();
 
     CLOG(INFO, "Ledger") << __func__ << ": updated " << numAccountsUpdated
                          << " accounts with liabilities";
