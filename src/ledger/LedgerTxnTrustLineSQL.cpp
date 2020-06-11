@@ -100,73 +100,6 @@ LedgerTxnRoot::Impl::loadTrustLine(LedgerKey const& key) const
     return std::make_shared<LedgerEntry>(std::move(le));
 }
 
-void
-LedgerTxnRoot::Impl::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
-{
-    CLOG(INFO, "Ledger") << __func__ << ": updating trustline extension schema";
-
-    std::string accountIDStrKey, issuerStrKey, assetStrKey;
-    Liabilities liabilities;
-    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
-
-    auto prep_select = mDatabase.getPreparedStatement(
-        "SELECT "
-        "accountid, issuer, assetcode, buyingliabilities, sellingliabilities "
-        "FROM trustlines WHERE "
-        "buyingliabilities IS NOT NULL"
-        " OR "
-        "sellingliabilities IS NOT NULL");
-    auto& st_select = prep_select.statement();
-    st_select.exchange(soci::into(accountIDStrKey));
-    st_select.exchange(soci::into(issuerStrKey));
-    st_select.exchange(soci::into(assetStrKey));
-    st_select.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-    st_select.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
-    st_select.define_and_bind();
-    {
-        auto timer = mDatabase.getSelectTimer("trustline-ext-to-opaque");
-        st_select.execute(true);
-    }
-
-    size_t numTrustLinesUpdated = 0;
-    for (; st_select.got_data(); st_select.fetch())
-    {
-        // We've only selected trustlines which have at least one of
-        // buying liabilities or selling liabilities present, and if
-        // either is present, then both should be.
-        assert(buyingLiabilitiesInd == soci::i_ok);
-        assert(sellingLiabilitiesInd == soci::i_ok);
-        std::string opaqueExtension(
-            decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
-        auto prep_update = mDatabase.getPreparedStatement(
-            "UPDATE trustlines SET extension = :ext WHERE accountID = :id AND "
-            "issuer = :issuer_id AND asset = :asset_id");
-        auto& st_update = prep_update.statement();
-        st_update.exchange(soci::use(opaqueExtension, "ext"));
-        st_update.exchange(soci::use(accountIDStrKey, "id"));
-        st_update.exchange(soci::use(issuerStrKey, "issuer_id"));
-        st_update.exchange(soci::use(assetStrKey, "asset_id"));
-        st_update.define_and_bind();
-        st_update.execute(true);
-        auto affected_rows = st_update.get_affected_rows();
-        if (affected_rows != 1)
-        {
-            throw std::runtime_error(
-                fmt::format("{}: updating trustline with account ID {}, issuer "
-                            "{}, and asset {} affected {} row(s)",
-                            __func__, accountIDStrKey, issuerStrKey,
-                            assetStrKey, affected_rows));
-        }
-        ++numTrustLinesUpdated;
-    }
-
-    mEntryCache.clear();
-    mBestOffersCache.clear();
-
-    CLOG(INFO, "Ledger") << __func__ << ": updated " << numTrustLinesUpdated
-                         << " trustlines with liabilities";
-}
-
 class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
 {
     Database& mDB;
@@ -494,14 +427,6 @@ LedgerTxnRoot::Impl::dropTrustLines()
            "lastmodified INT             NOT NULL,"
            "PRIMARY KEY  (accountid, issuer, assetcode)"
            ");";
-}
-
-void
-LedgerTxnRoot::Impl::convertTrustLineExtensionsToOpaqueXDR()
-{
-    soci::session& sess = mDatabase.getSession();
-    sess << "ALTER TABLE trustlines ADD extension TEXT;";
-    copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
 }
 
 class BulkLoadTrustLinesOperation

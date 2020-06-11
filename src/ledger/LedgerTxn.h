@@ -423,18 +423,6 @@ class AbstractLedgerTxnParent
     // other than a (real or stub) root LedgerTxn.
     virtual void dropTrustLines() = 0;
 
-    // Convert the accounts table from using explicit entries for
-    // extension fields into storing the entire extension as opaque XDR.
-    // Will throw when called on anything other than a (real or stub)
-    // root LedgerTxn.
-    virtual void convertAccountExtensionsToOpaqueXDR() = 0;
-
-    // Convert the trustlines table from using explicit entries for
-    // extension fields into storing the entire extension as opaque XDR.
-    // Will throw when called on anything other than a (real or stub)
-    // root LedgerTxn.
-    virtual void convertTrustLineExtensionsToOpaqueXDR() = 0;
-
     // Return the current cache hit rate for prefetched ledger entries, as a
     // fraction from 0.0 to 1.0. Will throw when called on anything other than a
     // (real or stub) root LedgerTxn.
@@ -678,8 +666,6 @@ class LedgerTxn final : public AbstractLedgerTxn
     void dropData() override;
     void dropOffers() override;
     void dropTrustLines() override;
-    void convertAccountExtensionsToOpaqueXDR() override;
-    void convertTrustLineExtensionsToOpaqueXDR() override;
     double getPrefetchHitRate() const override;
     uint32_t prefetch(std::unordered_set<LedgerKey> const& keys) override;
 
@@ -717,8 +703,6 @@ class LedgerTxnRoot : public AbstractLedgerTxnParent
     void dropData() override;
     void dropOffers() override;
     void dropTrustLines() override;
-    void convertAccountExtensionsToOpaqueXDR() override;
-    void convertTrustLineExtensionsToOpaqueXDR() override;
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     void resetForFuzzer();

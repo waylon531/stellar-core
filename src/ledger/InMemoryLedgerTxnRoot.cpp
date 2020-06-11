@@ -116,16 +116,6 @@ InMemoryLedgerTxnRoot::dropTrustLines()
 {
 }
 
-void
-InMemoryLedgerTxnRoot::convertAccountExtensionsToOpaqueXDR()
-{
-}
-
-void
-InMemoryLedgerTxnRoot::convertTrustLineExtensionsToOpaqueXDR()
-{
-}
-
 double
 InMemoryLedgerTxnRoot::getPrefetchHitRate() const
 {

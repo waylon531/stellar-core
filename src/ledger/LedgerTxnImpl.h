@@ -695,9 +695,6 @@ class LedgerTxnRoot::Impl
     std::shared_ptr<LedgerEntry const>
     loadTrustLine(LedgerKey const& key) const;
 
-    void copyIndividualAccountExtensionFieldsToOpaqueXDR();
-    void copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
-
     void bulkApply(BulkLedgerEntryChangeAccumulator& bleca,
                    size_t bufferThreshold, LedgerTxnConsistency cons);
     void bulkUpsertAccounts(std::vector<EntryIterator> const& entries);
@@ -767,16 +764,12 @@ class LedgerTxnRoot::Impl
     // deleteObjectsModifiedOnOrAfterLedger has no exception safety guarantees.
     void deleteObjectsModifiedOnOrAfterLedger(uint32_t ledger) const;
 
-    // dropAccounts, dropData, dropOffers, dropTrustLines,
-    // convertAccountExtensionsToOpaqueXDR, and
-    // convertTrustLineExtensionsToOpaqueXDR have no exception safety
-    // guarantees.
+    // dropAccounts, dropData, dropOffers, and dropTrustLines have
+    // no exception safety guarantees.
     void dropAccounts();
     void dropData();
     void dropOffers();
     void dropTrustLines();
-    void convertAccountExtensionsToOpaqueXDR();
-    void convertTrustLineExtensionsToOpaqueXDR();
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     void resetForFuzzer();

@@ -1542,20 +1542,6 @@ LedgerTxn::dropTrustLines()
     throw std::runtime_error("called dropTrustLines on non-root LedgerTxn");
 }
 
-void
-LedgerTxn::convertAccountExtensionsToOpaqueXDR()
-{
-    throw std::runtime_error(
-        fmt::format("called {} on non-root LedgerTxn", __func__));
-}
-
-void
-LedgerTxn::convertTrustLineExtensionsToOpaqueXDR()
-{
-    throw std::runtime_error(
-        fmt::format("called {} on non-root LedgerTxn", __func__));
-}
-
 double
 LedgerTxn::getPrefetchHitRate() const
 {
@@ -2259,18 +2245,6 @@ void
 LedgerTxnRoot::dropTrustLines()
 {
     mImpl->dropTrustLines();
-}
-
-void
-LedgerTxnRoot::convertAccountExtensionsToOpaqueXDR()
-{
-    mImpl->convertAccountExtensionsToOpaqueXDR();
-}
-
-void
-LedgerTxnRoot::convertTrustLineExtensionsToOpaqueXDR()
-{
-    mImpl->convertTrustLineExtensionsToOpaqueXDR();
 }
 
 uint32_t

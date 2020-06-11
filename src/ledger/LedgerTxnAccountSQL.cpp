@@ -99,66 +99,6 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
     return std::make_shared<LedgerEntry const>(std::move(le));
 }
 
-void
-LedgerTxnRoot::Impl::copyIndividualAccountExtensionFieldsToOpaqueXDR()
-{
-    CLOG(INFO, "Ledger") << __func__ << ": updating account extension schema";
-
-    std::string accountIDStrKey;
-    Liabilities liabilities;
-    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
-
-    auto prep_select = mDatabase.getPreparedStatement(
-        "SELECT "
-        "accountid, buyingliabilities, sellingliabilities "
-        "FROM accounts WHERE "
-        "buyingliabilities IS NOT NULL"
-        " OR "
-        "sellingliabilities IS NOT NULL");
-    auto& st_select = prep_select.statement();
-    st_select.exchange(soci::into(accountIDStrKey));
-    st_select.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-    st_select.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
-    st_select.define_and_bind();
-    {
-        auto timer = mDatabase.getSelectTimer("account-ext-to-opaque");
-        st_select.execute(true);
-    }
-
-    size_t numAccountsUpdated = 0;
-    for (; st_select.got_data(); st_select.fetch())
-    {
-        // We've only selected accounts which have at least one of
-        // buying liabilities or selling liabilities present, and if
-        // either is present, then both should be.
-        assert(buyingLiabilitiesInd == soci::i_ok);
-        assert(sellingLiabilitiesInd == soci::i_ok);
-        std::string opaqueExtension(
-            decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
-        auto prep_update = mDatabase.getPreparedStatement(
-            "UPDATE accounts SET extension = :ext WHERE accountID = :id");
-        auto& st_update = prep_update.statement();
-        st_update.exchange(soci::use(opaqueExtension, "ext"));
-        st_update.exchange(soci::use(accountIDStrKey, "id"));
-        st_update.define_and_bind();
-        st_update.execute(true);
-        auto affected_rows = st_update.get_affected_rows();
-        if (affected_rows != 1)
-        {
-            throw std::runtime_error(
-                fmt::format("{}: updating account {} affected {} row(s)",
-                            __func__, accountIDStrKey, affected_rows));
-        }
-        ++numAccountsUpdated;
-    }
-
-    mEntryCache.clear();
-    mBestOffersCache.clear();
-
-    CLOG(INFO, "Ledger") << __func__ << ": updated " << numAccountsUpdated
-                         << " accounts with liabilities";
-}
-
 std::vector<InflationWinner>
 LedgerTxnRoot::Impl::loadInflationWinners(size_t maxWinners,
                                           int64_t minBalance) const
@@ -546,14 +486,6 @@ LedgerTxnRoot::Impl::dropAccounts()
            "signers            TEXT,"
            "lastmodified       INT          NOT NULL"
            ");";
-}
-
-void
-LedgerTxnRoot::Impl::convertAccountExtensionsToOpaqueXDR()
-{
-    soci::session& sess = mDatabase.getSession();
-    sess << "ALTER TABLE accounts ADD extension TEXT;";
-    copyIndividualAccountExtensionFieldsToOpaqueXDR();
 }
 
 class BulkLoadAccountsOperation

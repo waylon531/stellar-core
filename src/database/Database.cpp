@@ -2,17 +2,19 @@
 // under the Apache License, Version 2.0. See the COPYING file at the root
 // of this distribution or at http://www.apache.org/licenses/LICENSE-2.0
 
-#include "database/Database.h"
 #include "crypto/Hex.h"
+#include "database/Database.h"
 #include "database/DatabaseConnectionString.h"
 #include "database/DatabaseTypeSpecificOperation.h"
 #include "main/Application.h"
 #include "main/Config.h"
 #include "overlay/StellarXDR.h"
+#include "util/Decoder.h"
 #include "util/GlobalChecks.h"
 #include "util/Logging.h"
 #include "util/Timer.h"
 #include "util/types.h"
+#include <fmt/format.h>
 
 #include "bucket/BucketManager.h"
 #include "herder/HerderPersistence.h"
@@ -253,11 +255,14 @@ Database::applySchemaUpgrade(unsigned long vers)
         mSession << "DROP INDEX IF EXISTS accountbalances";
         break;
     case 13:
-        // Absorb the explicit columns of the extension fields of
-        // AccountEntry and TrustLineEntry into single opaque
-        // blobs of XDR each of which represents an entire extension.
-        mApp.getLedgerTxnRoot().convertAccountExtensionsToOpaqueXDR();
-        mApp.getLedgerTxnRoot().convertTrustLineExtensionsToOpaqueXDR();
+        if (!mApp.getConfig().MODE_USES_IN_MEMORY_LEDGER)
+        {
+            // Absorb the explicit columns of the extension fields of
+            // AccountEntry and TrustLineEntry into single opaque
+            // blobs of XDR each of which represents an entire extension.
+            convertAccountExtensionsToOpaqueXDR();
+            convertTrustLineExtensionsToOpaqueXDR();
+        }
         break;
     default:
         throw std::runtime_error("Unknown DB schema version");
@@ -294,6 +299,141 @@ Database::upgradeToCurrentSchema()
     }
     CLOG(INFO, "Database") << "DB schema is in current version";
     assert(vers == SCHEMA_VERSION);
+}
+
+void
+Database::convertAccountExtensionsToOpaqueXDR()
+{
+    mSession << "ALTER TABLE accounts ADD extension TEXT;";
+    copyIndividualAccountExtensionFieldsToOpaqueXDR();
+}
+
+void
+Database::convertTrustLineExtensionsToOpaqueXDR()
+{
+    mSession << "ALTER TABLE trustlines ADD extension TEXT;";
+    copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
+}
+
+void
+Database::copyIndividualAccountExtensionFieldsToOpaqueXDR()
+{
+    CLOG(INFO, "Ledger") << __func__ << ": updating account extension schema";
+
+    std::string accountIDStrKey;
+    Liabilities liabilities;
+    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
+
+    auto prep_select =
+        getPreparedStatement("SELECT "
+                             "accountid, buyingliabilities, sellingliabilities "
+                             "FROM accounts WHERE "
+                             "buyingliabilities IS NOT NULL"
+                             " OR "
+                             "sellingliabilities IS NOT NULL");
+    auto& st_select = prep_select.statement();
+    st_select.exchange(soci::into(accountIDStrKey));
+    st_select.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
+    st_select.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+    st_select.define_and_bind();
+    {
+        auto timer = getSelectTimer("account-ext-to-opaque");
+        st_select.execute(true);
+    }
+
+    size_t numAccountsUpdated = 0;
+    for (; st_select.got_data(); st_select.fetch())
+    {
+        // We've only selected accounts which have at least one of
+        // buying liabilities or selling liabilities present, and if
+        // either is present, then both should be.
+        assert(buyingLiabilitiesInd == soci::i_ok);
+        assert(sellingLiabilitiesInd == soci::i_ok);
+        std::string opaqueExtension(
+            decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
+        auto prep_update = getPreparedStatement(
+            "UPDATE accounts SET extension = :ext WHERE accountID = :id");
+        auto& st_update = prep_update.statement();
+        st_update.exchange(soci::use(opaqueExtension, "ext"));
+        st_update.exchange(soci::use(accountIDStrKey, "id"));
+        st_update.define_and_bind();
+        st_update.execute(true);
+        auto affected_rows = st_update.get_affected_rows();
+        if (affected_rows != 1)
+        {
+            throw std::runtime_error(
+                fmt::format("{}: updating account {} affected {} row(s)",
+                            __func__, accountIDStrKey, affected_rows));
+        }
+        ++numAccountsUpdated;
+    }
+
+    CLOG(INFO, "Ledger") << __func__ << ": updated " << numAccountsUpdated
+                         << " accounts with liabilities";
+}
+
+void
+Database::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
+{
+    CLOG(INFO, "Ledger") << __func__ << ": updating trustline extension schema";
+
+    std::string accountIDStrKey, issuerStrKey, assetStrKey;
+    Liabilities liabilities;
+    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
+
+    auto prep_select = getPreparedStatement(
+        "SELECT "
+        "accountid, issuer, assetcode, buyingliabilities, sellingliabilities "
+        "FROM trustlines WHERE "
+        "buyingliabilities IS NOT NULL"
+        " OR "
+        "sellingliabilities IS NOT NULL");
+    auto& st_select = prep_select.statement();
+    st_select.exchange(soci::into(accountIDStrKey));
+    st_select.exchange(soci::into(issuerStrKey));
+    st_select.exchange(soci::into(assetStrKey));
+    st_select.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
+    st_select.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+    st_select.define_and_bind();
+    {
+        auto timer = getSelectTimer("trustline-ext-to-opaque");
+        st_select.execute(true);
+    }
+
+    size_t numTrustLinesUpdated = 0;
+    for (; st_select.got_data(); st_select.fetch())
+    {
+        // We've only selected trustlines which have at least one of
+        // buying liabilities or selling liabilities present, and if
+        // either is present, then both should be.
+        assert(buyingLiabilitiesInd == soci::i_ok);
+        assert(sellingLiabilitiesInd == soci::i_ok);
+        std::string opaqueExtension(
+            decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
+        auto prep_update = getPreparedStatement(
+            "UPDATE trustlines SET extension = :ext WHERE accountID = :id AND "
+            "issuer = :issuer_id AND asset = :asset_id");
+        auto& st_update = prep_update.statement();
+        st_update.exchange(soci::use(opaqueExtension, "ext"));
+        st_update.exchange(soci::use(accountIDStrKey, "id"));
+        st_update.exchange(soci::use(issuerStrKey, "issuer_id"));
+        st_update.exchange(soci::use(assetStrKey, "asset_id"));
+        st_update.define_and_bind();
+        st_update.execute(true);
+        auto affected_rows = st_update.get_affected_rows();
+        if (affected_rows != 1)
+        {
+            throw std::runtime_error(
+                fmt::format("{}: updating trustline with account ID {}, issuer "
+                            "{}, and asset {} affected {} row(s)",
+                            __func__, accountIDStrKey, issuerStrKey,
+                            assetStrKey, affected_rows));
+        }
+        ++numTrustLinesUpdated;
+    }
+
+    CLOG(INFO, "Ledger") << __func__ << ": updated " << numTrustLinesUpdated
+                         << " trustlines with liabilities";
 }
 
 void
