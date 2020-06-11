@@ -2270,7 +2270,7 @@ LedgerTxnRoot::convertAccountExtensionsToOpaqueXDR()
 void
 LedgerTxnRoot::convertTrustLineExtensionsToOpaqueXDR()
 {
-    mImpl->convertAccountExtensionsToOpaqueXDR();
+    mImpl->convertTrustLineExtensionsToOpaqueXDR();
 }
 
 uint32_t
