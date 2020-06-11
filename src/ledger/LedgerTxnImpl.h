@@ -696,9 +696,8 @@ class LedgerTxnRoot::Impl
     loadTrustLine(LedgerKey const& key) const;
 
     void copyLiabilitiesExtensionFieldsToOpaqueXDR();
-    void convertLiabilitiesExtensionFieldsToOpaqueXDR();
-    void copyIndividualAccountExtensionFieldsToOpaqueXDR();
-    void copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
+    void
+    convertLiabilitiesExtensionFieldsToOpaqueXDR(const LedgerEntryType let);
 
     void bulkApply(BulkLedgerEntryChangeAccumulator& bleca,
                    size_t bufferThreshold, LedgerTxnConsistency cons);
