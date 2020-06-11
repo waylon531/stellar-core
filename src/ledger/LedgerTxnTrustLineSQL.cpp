@@ -7,6 +7,7 @@
 #include "database/Database.h"
 #include "database/DatabaseTypeSpecificOperation.h"
 #include "ledger/LedgerTxnImpl.h"
+#include "util/Decoder.h"
 #include "util/XDROperators.h"
 #include "util/types.h"
 #include <Tracy.hpp>
@@ -53,24 +54,23 @@ LedgerTxnRoot::Impl::loadTrustLine(LedgerKey const& key) const
     getTrustLineStrings(key.trustLine().accountID, key.trustLine().asset,
                         accountIDStr, issuerStr, assetStr);
 
-    Liabilities liabilities;
-    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
+    std::string extensionStr;
+    soci::indicator extensionInd;
 
     LedgerEntry le;
     le.data.type(TRUSTLINE);
     TrustLineEntry& tl = le.data.trustLine();
 
     auto prep = mDatabase.getPreparedStatement(
-        "SELECT tlimit, balance, flags, lastmodified, buyingliabilities, "
-        "sellingliabilities FROM trustlines "
+        "SELECT tlimit, balance, flags, lastmodified, "
+        "extension FROM trustlines "
         "WHERE accountid= :id AND issuer= :issuer AND assetcode= :asset");
     auto& st = prep.statement();
     st.exchange(soci::into(tl.limit));
     st.exchange(soci::into(tl.balance));
     st.exchange(soci::into(tl.flags));
     st.exchange(soci::into(le.lastModifiedLedgerSeq));
-    st.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-    st.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+    st.exchange(soci::into(extensionStr, extensionInd));
     st.exchange(soci::use(accountIDStr));
     st.exchange(soci::use(issuerStr));
     st.exchange(soci::use(assetStr));
@@ -87,11 +87,11 @@ LedgerTxnRoot::Impl::loadTrustLine(LedgerKey const& key) const
     tl.accountID = key.trustLine().accountID;
     tl.asset = key.trustLine().asset;
 
-    assert(buyingLiabilitiesInd == sellingLiabilitiesInd);
-    if (buyingLiabilitiesInd == soci::i_ok)
+    if (extensionInd == soci::i_ok)
     {
-        tl.ext.v(1);
-        tl.ext.v1().liabilities = liabilities;
+        std::vector<uint8_t> extensionOpaque;
+        decoder::decode_b64(extensionStr, extensionOpaque);
+        xdr::xdr_from_opaque(extensionOpaque, tl.ext);
     }
 
     return std::make_shared<LedgerEntry>(std::move(le));

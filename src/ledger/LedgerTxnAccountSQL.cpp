@@ -26,8 +26,8 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
 
     std::string inflationDest, homeDomain, thresholds, signers;
     soci::indicator inflationDestInd, signersInd;
-    Liabilities liabilities;
-    soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
+    std::string extensionStr;
+    soci::indicator extensionInd;
 
     LedgerEntry le;
     le.data.type(ACCOUNT);
@@ -37,8 +37,7 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
         mDatabase.getPreparedStatement("SELECT balance, seqnum, numsubentries, "
                                        "inflationdest, homedomain, thresholds, "
                                        "flags, lastmodified, "
-                                       "buyingliabilities, sellingliabilities, "
-                                       "signers "
+                                       "signers, extension "
                                        "FROM accounts WHERE accountid=:v1");
     auto& st = prep.statement();
     st.exchange(soci::into(account.balance));
@@ -49,9 +48,8 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
     st.exchange(soci::into(thresholds));
     st.exchange(soci::into(account.flags));
     st.exchange(soci::into(le.lastModifiedLedgerSeq));
-    st.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-    st.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
     st.exchange(soci::into(signers, signersInd));
+    st.exchange(soci::into(extensionStr, extensionInd));
     st.exchange(soci::use(actIDStrKey));
     st.define_and_bind();
     {
@@ -87,11 +85,11 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
                                   }) == account.signers.end());
     }
 
-    assert(buyingLiabilitiesInd == sellingLiabilitiesInd);
-    if (buyingLiabilitiesInd == soci::i_ok)
+    if (extensionInd == soci::i_ok)
     {
-        account.ext.v(1);
-        account.ext.v1().liabilities = liabilities;
+        std::vector<uint8_t> extensionOpaque;
+        decoder::decode_b64(extensionStr, extensionOpaque);
+        xdr::xdr_from_opaque(extensionOpaque, account.ext);
     }
 
     return std::make_shared<LedgerEntry const>(std::move(le));
