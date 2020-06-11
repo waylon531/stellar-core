@@ -552,10 +552,8 @@ void
 LedgerTxnRoot::Impl::convertAccountExtensionsToOpaqueXDR()
 {
     soci::session& sess = mDatabase.getSession();
-    sess << "ALTER TABLE accounts ADD extension TEXT";
+    sess << "ALTER TABLE accounts ADD extension TEXT;";
     copyIndividualAccountExtensionFieldsToOpaqueXDR();
-    sess << "ALTER TABLE accounts DROP COLUMN buyingliabilities";
-    sess << "ALTER TABLE accounts DROP COLUMN sellingliabilities";
 }
 
 class BulkLoadAccountsOperation

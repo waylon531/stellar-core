@@ -500,10 +500,8 @@ void
 LedgerTxnRoot::Impl::convertTrustLineExtensionsToOpaqueXDR()
 {
     soci::session& sess = mDatabase.getSession();
-    sess << "ALTER TABLE trustlines ADD extension TEXT";
+    sess << "ALTER TABLE trustlines ADD extension TEXT;";
     copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
-    sess << "ALTER TABLE trustlines DROP COLUMN buyingliabilities";
-    sess << "ALTER TABLE trustlines DROP COLUMN sellingliabilities";
 }
 
 class BulkLoadTrustLinesOperation
