@@ -15,6 +15,7 @@
 #include "xdrpp/marshal.h"
 #include <Tracy.hpp>
 #include <fmt/format.h>
+#include <soci-backend.h>
 
 namespace stellar
 {

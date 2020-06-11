@@ -7,6 +7,7 @@
 #include "database/Database.h"
 #include "database/DatabaseTypeSpecificOperation.h"
 #include "ledger/LedgerTxnImpl.h"
+#include "util/Logging.h"
 #include "util/XDROperators.h"
 #include "util/types.h"
 #include <Tracy.hpp>
