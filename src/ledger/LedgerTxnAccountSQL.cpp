@@ -87,9 +87,10 @@ LedgerTxnRoot::Impl::loadAccount(LedgerKey const& key) const
 
     if (extensionInd == soci::i_ok)
     {
+        account.ext.v(1);
         std::vector<uint8_t> extensionOpaque;
         decoder::decode_b64(extensionStr, extensionOpaque);
-        xdr::xdr_from_opaque(extensionOpaque, account.ext);
+        xdr::xdr_from_opaque(extensionOpaque, account.ext.v1());
     }
 
     return std::make_shared<LedgerEntry const>(std::move(le));
@@ -143,9 +144,8 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
     std::vector<std::string> mSigners;
     std::vector<soci::indicator> mSignerInds;
     std::vector<int32_t> mLastModifieds;
-    std::vector<int64_t> mBuyingLiabilities;
-    std::vector<int64_t> mSellingLiabilities;
-    std::vector<soci::indicator> mLiabilitiesInds;
+    std::vector<std::string> mExtensions;
+    std::vector<soci::indicator> mExtensionInds;
 
   public:
     BulkUpsertAccountsOperation(Database& DB,
@@ -164,9 +164,8 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
         mSigners.reserve(entries.size());
         mSignerInds.reserve(entries.size());
         mLastModifieds.reserve(entries.size());
-        mBuyingLiabilities.reserve(entries.size());
-        mSellingLiabilities.reserve(entries.size());
-        mLiabilitiesInds.reserve(entries.size());
+        mExtensions.reserve(entries.size());
+        mExtensionInds.reserve(entries.size());
 
         for (auto const& e : entries)
         {
@@ -208,17 +207,14 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
 
             if (account.ext.v() >= 1)
             {
-                mBuyingLiabilities.emplace_back(
-                    account.ext.v1().liabilities.buying);
-                mSellingLiabilities.emplace_back(
-                    account.ext.v1().liabilities.selling);
-                mLiabilitiesInds.emplace_back(soci::i_ok);
+                mExtensions.emplace_back(
+                    decoder::encode_b64(xdr::xdr_to_opaque(account.ext.v1())));
+                mExtensionInds.emplace_back(soci::i_ok);
             }
             else
             {
-                mBuyingLiabilities.emplace_back(0);
-                mSellingLiabilities.emplace_back(0);
-                mLiabilitiesInds.emplace_back(soci::i_null);
+                mExtensions.emplace_back("");
+                mExtensionInds.emplace_back(soci::i_null);
             }
         }
     }
@@ -230,9 +226,9 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
             "INSERT INTO accounts ( "
             "accountid, balance, seqnum, numsubentries, inflationdest,"
             "homedomain, thresholds, signers, flags, lastmodified, "
-            "buyingliabilities, sellingliabilities "
+            "extension "
             ") VALUES ( "
-            ":id, :v1, :v2, :v3, :v4, :v5, :v6, :v7, :v8, :v9, :v10, :v11 "
+            ":id, :v1, :v2, :v3, :v4, :v5, :v6, :v7, :v8, :v9, :v10 "
             ") ON CONFLICT (accountid) DO UPDATE SET "
             "balance = excluded.balance, "
             "seqnum = excluded.seqnum, "
@@ -243,8 +239,7 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
             "signers = excluded.signers, "
             "flags = excluded.flags, "
             "lastmodified = excluded.lastmodified, "
-            "buyingliabilities = excluded.buyingliabilities, "
-            "sellingliabilities = excluded.sellingliabilities";
+            "extension = excluded.extension";
         auto prep = mDB.getPreparedStatement(sql);
         soci::statement& st = prep.statement();
         st.exchange(soci::use(mAccountIDs));
@@ -257,8 +252,7 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
         st.exchange(soci::use(mSigners, mSignerInds));
         st.exchange(soci::use(mFlags));
         st.exchange(soci::use(mLastModifieds));
-        st.exchange(soci::use(mBuyingLiabilities, mLiabilitiesInds));
-        st.exchange(soci::use(mSellingLiabilities, mLiabilitiesInds));
+        st.exchange(soci::use(mExtensions, mExtensionInds));
         st.define_and_bind();
         {
             auto timer = mDB.getUpsertTimer("account");
@@ -282,8 +276,7 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
     {
         std::string strAccountIDs, strBalances, strSeqNums, strSubEntryNums,
             strInflationDests, strFlags, strHomeDomains, strThresholds,
-            strSigners, strLastModifieds, strBuyingLiabilities,
-            strSellingLiabilities;
+            strSigners, strLastModifieds, strExtensions;
 
         PGconn* conn = pg->conn_;
         marshalToPGArray(conn, strAccountIDs, mAccountIDs);
@@ -297,10 +290,7 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
         marshalToPGArray(conn, strThresholds, mThresholds);
         marshalToPGArray(conn, strSigners, mSigners, &mSignerInds);
         marshalToPGArray(conn, strLastModifieds, mLastModifieds);
-        marshalToPGArray(conn, strBuyingLiabilities, mBuyingLiabilities,
-                         &mLiabilitiesInds);
-        marshalToPGArray(conn, strSellingLiabilities, mSellingLiabilities,
-                         &mLiabilitiesInds);
+        marshalToPGArray(conn, strExtensions, mExtensions, &mExtensionInds);
 
         std::string sql =
             "WITH r AS (SELECT "
@@ -314,13 +304,12 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
             "unnest(:v7::TEXT[]), "
             "unnest(:v8::INT[]), "
             "unnest(:v9::INT[]), "
-            "unnest(:v10::BIGINT[]), "
-            "unnest(:v11::BIGINT[]) "
+            "unnest(:v10::TEXT[]), "
             ")"
             "INSERT INTO accounts ( "
             "accountid, balance, seqnum, "
             "numsubentries, inflationdest, homedomain, thresholds, signers, "
-            "flags, lastmodified, buyingliabilities, sellingliabilities "
+            "flags, lastmodified, extension "
             ") SELECT * FROM r "
             "ON CONFLICT (accountid) DO UPDATE SET "
             "balance = excluded.balance, "
@@ -332,8 +321,7 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
             "signers = excluded.signers, "
             "flags = excluded.flags, "
             "lastmodified = excluded.lastmodified, "
-            "buyingliabilities = excluded.buyingliabilities, "
-            "sellingliabilities = excluded.sellingliabilities";
+            "extension = excluded.extension";
         auto prep = mDB.getPreparedStatement(sql);
         soci::statement& st = prep.statement();
         st.exchange(soci::use(strAccountIDs));
@@ -346,8 +334,7 @@ class BulkUpsertAccountsOperation : public DatabaseTypeSpecificOperation<void>
         st.exchange(soci::use(strSigners));
         st.exchange(soci::use(strFlags));
         st.exchange(soci::use(strLastModifieds));
-        st.exchange(soci::use(strBuyingLiabilities));
-        st.exchange(soci::use(strSellingLiabilities));
+        st.exchange(soci::use(strExtensions));
         st.define_and_bind();
         {
             auto timer = mDB.getUpsertTimer("account");

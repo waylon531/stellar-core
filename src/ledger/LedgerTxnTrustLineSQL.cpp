@@ -89,9 +89,10 @@ LedgerTxnRoot::Impl::loadTrustLine(LedgerKey const& key) const
 
     if (extensionInd == soci::i_ok)
     {
+        tl.ext.v(1);
         std::vector<uint8_t> extensionOpaque;
         decoder::decode_b64(extensionStr, extensionOpaque);
-        xdr::xdr_from_opaque(extensionOpaque, tl.ext);
+        xdr::xdr_from_opaque(extensionOpaque, tl.ext.v1());
     }
 
     return std::make_shared<LedgerEntry>(std::move(le));
@@ -108,9 +109,8 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
     std::vector<int64_t> mBalances;
     std::vector<int32_t> mFlags;
     std::vector<int32_t> mLastModifieds;
-    std::vector<int64_t> mBuyingLiabilities;
-    std::vector<int64_t> mSellingLiabilities;
-    std::vector<soci::indicator> mLiabilitiesInds;
+    std::vector<std::string> mExtensions;
+    std::vector<soci::indicator> mExtensionInds;
 
   public:
     BulkUpsertTrustLinesOperation(Database& DB,
@@ -125,9 +125,8 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
         mBalances.reserve(entries.size());
         mFlags.reserve(entries.size());
         mLastModifieds.reserve(entries.size());
-        mBuyingLiabilities.reserve(entries.size());
-        mSellingLiabilities.reserve(entries.size());
-        mLiabilitiesInds.reserve(entries.size());
+        mExtensions.reserve(entries.size());
+        mExtensionInds.reserve(entries.size());
 
         for (auto const& e : entries)
         {
@@ -151,16 +150,14 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
 
             if (tl.ext.v() >= 1)
             {
-                mBuyingLiabilities.emplace_back(tl.ext.v1().liabilities.buying);
-                mSellingLiabilities.emplace_back(
-                    tl.ext.v1().liabilities.selling);
-                mLiabilitiesInds.emplace_back(soci::i_ok);
+                mExtensions.emplace_back(
+                    decoder::encode_b64(xdr::xdr_to_opaque(tl.ext.v1())));
+                mExtensionInds.emplace_back(soci::i_ok);
             }
             else
             {
-                mBuyingLiabilities.emplace_back(0);
-                mSellingLiabilities.emplace_back(0);
-                mLiabilitiesInds.emplace_back(soci::i_null);
+                mExtensions.emplace_back("");
+                mExtensionInds.emplace_back(soci::i_null);
             }
         }
     }
@@ -172,17 +169,16 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
             "INSERT INTO trustlines ( "
             "accountid, assettype, issuer, assetcode,"
             "tlimit, balance, flags, lastmodified, "
-            "buyingliabilities, sellingliabilities "
+            "extension "
             ") VALUES ( "
-            ":id, :v1, :v2, :v3, :v4, :v5, :v6, :v7, :v8, :v9 "
+            ":id, :v1, :v2, :v3, :v4, :v5, :v6, :v7, :v8 "
             ") ON CONFLICT (accountid, issuer, assetcode) DO UPDATE SET "
             "assettype = excluded.assettype, "
             "tlimit = excluded.tlimit, "
             "balance = excluded.balance, "
             "flags = excluded.flags, "
             "lastmodified = excluded.lastmodified, "
-            "buyingliabilities = excluded.buyingliabilities, "
-            "sellingliabilities = excluded.sellingliabilities ";
+            "extension = excluded.extension ";
         auto prep = mDB.getPreparedStatement(sql);
         soci::statement& st = prep.statement();
         st.exchange(soci::use(mAccountIDs));
@@ -193,8 +189,7 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
         st.exchange(soci::use(mBalances));
         st.exchange(soci::use(mFlags));
         st.exchange(soci::use(mLastModifieds));
-        st.exchange(soci::use(mBuyingLiabilities, mLiabilitiesInds));
-        st.exchange(soci::use(mSellingLiabilities, mLiabilitiesInds));
+        st.exchange(soci::use(mExtensions, mExtensionInds));
         st.define_and_bind();
         {
             auto timer = mDB.getUpsertTimer("trustline");
@@ -219,8 +214,7 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
         PGconn* conn = pg->conn_;
 
         std::string strAccountIDs, strAssetTypes, strIssuers, strAssetCodes,
-            strTlimits, strBalances, strFlags, strLastModifieds,
-            strBuyingLiabilities, strSellingLiabilities;
+            strTlimits, strBalances, strFlags, strLastModifieds, strExtensions;
 
         marshalToPGArray(conn, strAccountIDs, mAccountIDs);
         marshalToPGArray(conn, strAssetTypes, mAssetTypes);
@@ -230,10 +224,7 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
         marshalToPGArray(conn, strBalances, mBalances);
         marshalToPGArray(conn, strFlags, mFlags);
         marshalToPGArray(conn, strLastModifieds, mLastModifieds);
-        marshalToPGArray(conn, strBuyingLiabilities, mBuyingLiabilities,
-                         &mLiabilitiesInds);
-        marshalToPGArray(conn, strSellingLiabilities, mSellingLiabilities,
-                         &mLiabilitiesInds);
+        marshalToPGArray(conn, strExtensions, mExtensions, &mExtensionInds);
 
         std::string sql =
             "WITH r AS (SELECT "
@@ -251,7 +242,7 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
             "INSERT INTO trustlines ( "
             "accountid, assettype, issuer, assetcode,"
             "tlimit, balance, flags, lastmodified, "
-            "buyingliabilities, sellingliabilities "
+            "extension "
             ") SELECT * from r "
             "ON CONFLICT (accountid, issuer, assetcode) DO UPDATE SET "
             "assettype = excluded.assettype, "
@@ -259,8 +250,7 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
             "balance = excluded.balance, "
             "flags = excluded.flags, "
             "lastmodified = excluded.lastmodified, "
-            "buyingliabilities = excluded.buyingliabilities, "
-            "sellingliabilities = excluded.sellingliabilities ";
+            "extension = excluded.extension ";
         auto prep = mDB.getPreparedStatement(sql);
         soci::statement& st = prep.statement();
         st.exchange(soci::use(strAccountIDs));
@@ -271,8 +261,7 @@ class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
         st.exchange(soci::use(strBalances));
         st.exchange(soci::use(strFlags));
         st.exchange(soci::use(strLastModifieds));
-        st.exchange(soci::use(strBuyingLiabilities));
-        st.exchange(soci::use(strSellingLiabilities));
+        st.exchange(soci::use(strExtensions));
         st.define_and_bind();
         {
             auto timer = mDB.getUpsertTimer("trustline");
