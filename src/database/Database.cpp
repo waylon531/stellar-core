@@ -326,6 +326,31 @@ Database::addTextColumnIfNotPresent(std::string const table,
     }
 }
 
+void
+Database::dropTextColumn(std::string const table, std::string const column)
+{
+    // SQLite doesn't give us a way of dropping a column with a single
+    // SQL command.  If we need it in production, we could re-create the
+    // table without the column and drop the old one.  Since we currently
+    // use SQLite only for testing and PostgreSQL in production, we simply
+    // leave the unused columm around in SQLite at the moment.
+    if (!isSqlite())
+    {
+        std::string dropColumnStr("ALTER TABLE " + table + " DROP COLUMN " +
+                                  column);
+        CLOG(INFO, "Database")
+            << "Dropping column '" << column << "' with string '"
+            << dropColumnStr << "' from table '" << table << "'";
+
+        mSession << dropColumnStr;
+    }
+    else
+    {
+        CLOG(INFO, "Database") << "SQLite does not support dropping column '"
+                               << column << "' from table '" << table << "'";
+    }
+}
+
 StatementContext
 Database::getPreparedOldLiabilitySelect(std::string const table,
                                         std::string const fields)
@@ -345,6 +370,8 @@ Database::convertAccountExtensionsToOpaqueXDR()
 {
     addTextColumnIfNotPresent("accounts", "extension");
     copyIndividualAccountExtensionFieldsToOpaqueXDR();
+    dropTextColumn("accounts", "buyingliabilities");
+    dropTextColumn("accounts", "sellingliabilities");
 }
 
 void
@@ -352,6 +379,8 @@ Database::convertTrustLineExtensionsToOpaqueXDR()
 {
     addTextColumnIfNotPresent("trustlines", "extension");
     copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
+    dropTextColumn("trustlines", "buyingliabilities");
+    dropTextColumn("trustlines", "sellingliabilities");
 }
 
 void
