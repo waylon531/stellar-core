@@ -407,9 +407,10 @@ LedgerTxnRoot::Impl::dropTrustLines()
         << "assetcode    VARCHAR(12) " << coll << " NOT NULL,"
         << "tlimit       BIGINT          NOT NULL CHECK (tlimit > 0),"
            "balance      BIGINT          NOT NULL CHECK (balance >= 0),"
+           "buyingliabilities BIGINT CHECK (buyingliabilities >= 0),"
+           "sellingliabilities BIGINT CHECK (sellingliabilities >= 0),"
            "flags        INT             NOT NULL,"
            "lastmodified INT             NOT NULL,"
-           "extension    TEXT,"
            "PRIMARY KEY  (accountid, issuer, assetcode)"
            ");";
 }

@@ -457,6 +457,8 @@ LedgerTxnRoot::Impl::dropAccounts()
         << "("
         << "accountid          VARCHAR(56)  " << coll << " PRIMARY KEY,"
         << "balance            BIGINT       NOT NULL CHECK (balance >= 0),"
+           "buyingliabilities  BIGINT CHECK (buyingliabilities >= 0),"
+           "sellingliabilities BIGINT CHECK (sellingliabilities >= 0),"
            "seqnum             BIGINT       NOT NULL,"
            "numsubentries      INT          NOT NULL CHECK (numsubentries >= "
            "0),"
@@ -465,8 +467,7 @@ LedgerTxnRoot::Impl::dropAccounts()
            "thresholds         TEXT         NOT NULL,"
            "flags              INT          NOT NULL,"
            "signers            TEXT,"
-           "lastmodified       INT          NOT NULL,"
-           "extension          TEXT"
+           "lastmodified       INT          NOT NULL"
            ");";
 }
 
