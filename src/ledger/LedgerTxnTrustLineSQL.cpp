@@ -428,8 +428,8 @@ class BulkLoadTrustLinesOperation
         std::string accountID, assetCode, issuer;
         int64_t balance, limit;
         uint32_t assetType, flags, lastModified;
-        Liabilities liabilities;
-        soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
+        std::string extension;
+        soci::indicator extensionInd;
 
         st.exchange(soci::into(accountID));
         st.exchange(soci::into(assetType));
@@ -439,8 +439,7 @@ class BulkLoadTrustLinesOperation
         st.exchange(soci::into(balance));
         st.exchange(soci::into(flags));
         st.exchange(soci::into(lastModified));
-        st.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-        st.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+        st.exchange(soci::into(extension, extensionInd));
         st.define_and_bind();
         {
             auto timer = mDb.getSelectTimer("trust");
@@ -477,11 +476,12 @@ class BulkLoadTrustLinesOperation
             tl.flags = flags;
             le.lastModifiedLedgerSeq = lastModified;
 
-            assert(buyingLiabilitiesInd == sellingLiabilitiesInd);
-            if (buyingLiabilitiesInd == soci::i_ok)
+            if (extensionInd == soci::i_ok)
             {
                 tl.ext.v(1);
-                tl.ext.v1().liabilities = liabilities;
+                std::vector<uint8_t> extensionOpaque;
+                decoder::decode_b64(extension, extensionOpaque);
+                xdr::xdr_from_opaque(extensionOpaque, tl.ext.v1());
             }
 
             st.fetch();
@@ -552,8 +552,8 @@ class BulkLoadTrustLinesOperation
         std::string sql =
             "WITH r AS (" + sqlJoin +
             ") SELECT accountid, assettype, assetcode, issuer, tlimit, "
-            "balance, flags, lastmodified, buyingliabilities, "
-            "sellingliabilities "
+            "balance, flags, lastmodified, "
+            "extension "
             "FROM trustlines WHERE (accountid, issuer, assetcode) IN r";
 
         auto prep = mDb.getPreparedStatement(sql);
@@ -593,8 +593,8 @@ class BulkLoadTrustLinesOperation
         auto prep = mDb.getPreparedStatement(
             "WITH r AS (SELECT unnest(:v1::TEXT[]), unnest(:v2::TEXT[]), "
             "unnest(:v3::TEXT[])) SELECT accountid, assettype, assetcode, "
-            "issuer, tlimit, balance, flags, lastmodified, buyingliabilities, "
-            "sellingliabilities FROM trustlines "
+            "issuer, tlimit, balance, flags, lastmodified, "
+            "extension FROM trustlines "
             "WHERE (accountid, issuer, assetcode) IN (SELECT * FROM r)");
         auto& st = prep.statement();
         st.exchange(soci::use(strAccountIDs));

@@ -483,9 +483,8 @@ class BulkLoadAccountsOperation
         int64_t balance;
         uint64_t seqNum;
         uint32_t numSubEntries, flags, lastModified;
-        Liabilities liabilities;
-        soci::indicator inflationDestInd, signersInd, buyingLiabilitiesInd,
-            sellingLiabilitiesInd;
+        std::string extension;
+        soci::indicator inflationDestInd, signersInd, extensionInd;
 
         st.exchange(soci::into(accountID));
         st.exchange(soci::into(balance));
@@ -496,8 +495,7 @@ class BulkLoadAccountsOperation
         st.exchange(soci::into(thresholds));
         st.exchange(soci::into(flags));
         st.exchange(soci::into(lastModified));
-        st.exchange(soci::into(liabilities.buying, buyingLiabilitiesInd));
-        st.exchange(soci::into(liabilities.selling, sellingLiabilitiesInd));
+        st.exchange(soci::into(extension, extensionInd));
         st.exchange(soci::into(signers, signersInd));
         st.define_and_bind();
         {
@@ -538,11 +536,12 @@ class BulkLoadAccountsOperation
             ae.flags = flags;
             le.lastModifiedLedgerSeq = lastModified;
 
-            assert(buyingLiabilitiesInd == sellingLiabilitiesInd);
-            if (buyingLiabilitiesInd == soci::i_ok)
+            if (extensionInd == soci::i_ok)
             {
                 ae.ext.v(1);
-                ae.ext.v1().liabilities = liabilities;
+                std::vector<uint8_t> extensionOpaque;
+                decoder::decode_b64(extension, extensionOpaque);
+                xdr::xdr_from_opaque(extensionOpaque, ae.ext.v1());
             }
 
             if (signersInd == soci::i_ok)
@@ -588,7 +587,7 @@ class BulkLoadAccountsOperation
         std::string sql =
             "SELECT accountid, balance, seqnum, numsubentries, "
             "inflationdest, homedomain, thresholds, flags, lastmodified, "
-            "buyingliabilities, sellingliabilities, signers FROM accounts "
+            "extension, signers FROM accounts "
             "WHERE accountid IN carray(?, ?, 'char*')";
 
         auto prep = mDb.getPreparedStatement(sql);
@@ -619,7 +618,7 @@ class BulkLoadAccountsOperation
             "WITH r AS (SELECT unnest(:v1::TEXT[])) "
             "SELECT accountid, balance, seqnum, numsubentries, "
             "inflationdest, homedomain, thresholds, flags, lastmodified, "
-            "buyingliabilities, sellingliabilities, signers FROM accounts "
+            "extension, signers FROM accounts "
             "WHERE accountid IN (SELECT * FROM r)";
 
         auto prep = mDb.getPreparedStatement(sql);

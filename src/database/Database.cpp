@@ -360,8 +360,7 @@ Database::copyIndividualAccountExtensionFieldsToOpaqueXDR()
     CLOG(INFO, "Ledger") << __func__ << ": updating account extension schema";
 
     std::string accountIDStrKey;
-    AccountEntry::_ext_t extension;
-    extension.v(1);
+    AccountEntry::_ext_t::_v1_t extension;
     soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
 
     size_t numAccountsUpdated = 0;
@@ -371,10 +370,10 @@ Database::copyIndividualAccountExtensionFieldsToOpaqueXDR()
             getPreparedOldLiabilitySelect("accounts", "accountid");
         auto& st_select = prep_select.statement();
         st_select.exchange(soci::into(accountIDStrKey));
-        st_select.exchange(soci::into(extension.v1().liabilities.buying,
-                                      buyingLiabilitiesInd));
-        st_select.exchange(soci::into(extension.v1().liabilities.selling,
-                                      sellingLiabilitiesInd));
+        st_select.exchange(
+            soci::into(extension.liabilities.buying, buyingLiabilitiesInd));
+        st_select.exchange(
+            soci::into(extension.liabilities.selling, sellingLiabilitiesInd));
         st_select.define_and_bind();
         {
             auto timer = getSelectTimer("account-ext-to-opaque");
@@ -423,7 +422,7 @@ Database::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
     CLOG(INFO, "Ledger") << __func__ << ": updating trustline extension schema";
 
     std::string accountIDStrKey, issuerStrKey, assetStrKey;
-    Liabilities liabilities;
+    TrustLineEntry::_ext_t::_v1_t extension;
     soci::indicator buyingLiabilitiesInd, sellingLiabilitiesInd;
 
     size_t numTrustLinesUpdated = 0;
@@ -436,9 +435,9 @@ Database::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
         st_select.exchange(soci::into(issuerStrKey));
         st_select.exchange(soci::into(assetStrKey));
         st_select.exchange(
-            soci::into(liabilities.buying, buyingLiabilitiesInd));
+            soci::into(extension.liabilities.buying, buyingLiabilitiesInd));
         st_select.exchange(
-            soci::into(liabilities.selling, sellingLiabilitiesInd));
+            soci::into(extension.liabilities.selling, sellingLiabilitiesInd));
         st_select.define_and_bind();
         {
             auto timer = getSelectTimer("trustline-ext-to-opaque");
@@ -453,7 +452,7 @@ Database::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
             assert(buyingLiabilitiesInd == soci::i_ok);
             assert(sellingLiabilitiesInd == soci::i_ok);
             std::string opaqueExtension(
-                decoder::encode_b64(xdr::xdr_to_opaque(liabilities)));
+                decoder::encode_b64(xdr::xdr_to_opaque(extension)));
             auto prep_update = getPreparedStatement(
                 "UPDATE trustlines SET extension = :ext WHERE accountID = :id "
                 "AND "
