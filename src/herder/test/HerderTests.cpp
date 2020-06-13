@@ -717,7 +717,7 @@ TEST_CASE("txset base fee", "[herder][txset]")
         auto balancesBefore = getBalances();
 
         // apply this
-        closeLedgerOn(*app, 2, 1, 1, 2020, txSet->mTransactions);
+        closeLedgerOn(*app, 2, 1, 1, 2020, 0, 0, 0, txSet->mTransactions);
 
         auto balancesAfter = getBalances();
         int64_t lowFee = INT64_MAX, highFee = 0;
@@ -1692,7 +1692,6 @@ TEST_CASE("values externalized out of order", "[herder][quickRestart]")
     // Make sure out of order messages are still within the validity range
     std::map<uint32_t, std::pair<SCPEnvelope, TxSetFramePtr>>
         validatorSCPMessages;
-    Hash qSetHash = sha256(xdr::xdr_to_opaque(qset));
 
     // Advance validator a bit further, and collect its externalize messages
     auto destinationLedger = waitForValidator(maxSlots / 2);

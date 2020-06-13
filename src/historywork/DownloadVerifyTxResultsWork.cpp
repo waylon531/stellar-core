@@ -68,8 +68,7 @@ DownloadVerifyTxResultsWork::yieldMoreWork()
                                                     mCurrCheckpoint);
     std::vector<std::shared_ptr<BasicWork>> seq{w1, w2};
     auto w3 = std::make_shared<WorkSequence>(
-        mApp, "download-verify-results-" + std::to_string(mCurrCheckpoint),
-        seq);
+        mApp, fmt::format("download-verify-results-{}", mCurrCheckpoint), seq);
 
     mCurrCheckpoint += mApp.getHistoryManager().getCheckpointFrequency();
     return w3;
