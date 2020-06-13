@@ -26,6 +26,9 @@
 namespace stellar
 {
 
+constexpr uint32_t const HerderSCPDriver::LAST_PROTOCOL_VERSION_WITH_ISSUE_622 =
+    13;
+
 HerderSCPDriver::SCPMetrics::SCPMetrics(Application& app)
     : mEnvelopeSign(
           app.getMetrics().NewMeter({"scp", "envelope", "sign"}, "envelope"))
@@ -721,13 +724,23 @@ HerderSCPDriver::combineCandidates(uint64_t slotIndex,
     }
 
     // just to be sure
-    auto removed = bestTxSet->trimInvalid(mApp);
+    size_t num_removed = 0;
+    {
+        LedgerTxn ltx(mApp.getLedgerTxnRoot());
+        if (ltx.loadHeader().current().ledgerVersion >
+            LAST_PROTOCOL_VERSION_WITH_ISSUE_622)
+        {
+            ltx.loadHeader().current().scpValue.closeTime = comp.closeTime;
+        }
+        auto removed = bestTxSet->trimInvalid(ltx);
+        num_removed = removed.size();
+    }
     comp.txSetHash = bestTxSet->getContentsHash();
 
-    if (removed.size() != 0)
+    if (num_removed != 0)
     {
-        CLOG(WARNING, "Herder") << "Candidate set had " << removed.size()
-                                << " invalid transactions";
+        CLOG(WARNING, "Herder")
+            << "Candidate set had " << num_removed << " invalid transactions";
 
         // learn the updated tx set
         bestTxSet = mPendingEnvelopes.putTxSet(bestTxSet->getContentsHash(),

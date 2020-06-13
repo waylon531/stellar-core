@@ -54,6 +54,8 @@ class InMemoryLedgerTxnRoot : public AbstractLedgerTxnParent
     void dropData() override;
     void dropOffers() override;
     void dropTrustLines() override;
+    void convertAccountExtensionsToOpaqueXDR() override;
+    void convertTrustLineExtensionsToOpaqueXDR() override;
     double getPrefetchHitRate() const override;
     uint32_t prefetch(std::unordered_set<LedgerKey> const& keys) override;
 };

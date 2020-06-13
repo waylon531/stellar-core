@@ -10,6 +10,7 @@
 #include "util/XDROperators.h"
 #include "util/types.h"
 #include <Tracy.hpp>
+#include <fmt/format.h>
 
 namespace stellar
 {
@@ -95,6 +96,13 @@ LedgerTxnRoot::Impl::loadTrustLine(LedgerKey const& key) const
     }
 
     return std::make_shared<LedgerEntry>(std::move(le));
+}
+
+void
+LedgerTxnRoot::Impl::copyIndividualTrustLineExtensionFieldsToOpaqueXDR()
+{
+    throw std::logic_error(
+        fmt::format("{} not implemented yet", __PRETTY_FUNCTION__));
 }
 
 class BulkUpsertTrustLinesOperation : public DatabaseTypeSpecificOperation<void>
@@ -424,6 +432,16 @@ LedgerTxnRoot::Impl::dropTrustLines()
            "lastmodified INT             NOT NULL,"
            "PRIMARY KEY  (accountid, issuer, assetcode)"
            ");";
+}
+
+void
+LedgerTxnRoot::Impl::convertTrustLineExtensionsToOpaqueXDR()
+{
+    soci::session& sess = mDatabase.getSession();
+    sess << "ALTER TABLE trustlines ADD extension TEXT";
+    copyIndividualTrustLineExtensionFieldsToOpaqueXDR();
+    sess << "ALTER TABLE trustlines DROP COLUMN buyingliabilities";
+    sess << "ALTER TABLE trustlines DROP COLUMN sellingliabilities";
 }
 
 class BulkLoadTrustLinesOperation

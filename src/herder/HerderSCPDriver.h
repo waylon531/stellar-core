@@ -32,6 +32,8 @@ struct SCPEnvelope;
 class HerderSCPDriver : public SCPDriver
 {
   public:
+    static const uint32_t LAST_PROTOCOL_VERSION_WITH_ISSUE_622;
+
     struct ConsensusData
     {
         uint64_t mConsensusIndex;

@@ -57,7 +57,7 @@ bool Database::gDriversRegistered = false;
 
 // smallest schema version supported
 static unsigned long const MIN_SCHEMA_VERSION = 9;
-static unsigned long const SCHEMA_VERSION = 12;
+static unsigned long const SCHEMA_VERSION = 13;
 
 // These should always match our compiled version precisely, since we are
 // using a bundled version to get access to carray(). But in case someone
@@ -251,6 +251,13 @@ Database::applySchemaUpgrade(unsigned long vers)
         // With inflation disabled, it's not worth keeping
         // the accountbalances index around.
         mSession << "DROP INDEX IF EXISTS accountbalances";
+        break;
+    case 13:
+        // Absorb the explicit columns of the extension fields of
+        // AccountEntry and TrustLineEntry into single opaque
+        // blobs of XDR each of which represents an entire extension.
+        mApp.getLedgerTxnRoot().convertAccountExtensionsToOpaqueXDR();
+        mApp.getLedgerTxnRoot().convertTrustLineExtensionsToOpaqueXDR();
         break;
     default:
         throw std::runtime_error("Unknown DB schema version");
