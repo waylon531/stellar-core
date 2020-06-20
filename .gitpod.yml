@@ -1,0 +1,3 @@
+tasks:
+  - init: 'git submodule init && git submodule update && ./autogen.sh && ./configure --enable-tracy --enable-tracy-capture && make'
+    command: 'make check'
