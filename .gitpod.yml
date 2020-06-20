@@ -1,6 +1,14 @@
 image:
   file: .devcontainer/Dockerfile
+  context: .devcontainer
 
 tasks:
-  - init: 'git submodule init && git submodule update && ./autogen.sh && ./configure --enable-tracy --enable-tracy-capture && make'
-    command: 'make check'
+  - init: 'echo gitpod ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/gitpod
+    && chmod 0440 /etc/sudoers.d/gitpod
+    && git submodule init
+    && git submodule update
+    && ./autogen.sh
+    && ./configure --enable-tracy --enable-tracy-capture
+    && bear make
+    && make check'
+    command: 'echo "Welcome to the stellar-core Gitpod development environment."'
