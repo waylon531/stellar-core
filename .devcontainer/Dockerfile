@@ -28,7 +28,7 @@ RUN apt-get update \
     && usermod -G vscode -a gitpod \
     # [Optional] Add sudo support for the non-root users
     && apt-get install -y sudo \
-    && for u in $USERNAME gitpod ; do
+    && for u in $USERNAME gitpod ; do \
         echo $u ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$u \
         chmod 0440 /etc/sudoers.d/$u \
        done \
