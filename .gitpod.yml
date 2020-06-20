@@ -1,0 +1,7 @@
+image:
+  file: .devcontainer/Dockerfile
+
+tasks:
+  - init: 'git submodule init ; git submodule update ; ./autogen.sh ; \ ./configure
+      --enable-tracy --enable-tracy-capture --enable-tracy-gui ; \ make -j4'
+    command: make check
