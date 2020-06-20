@@ -3,9 +3,7 @@ image:
   context: .devcontainer
 
 tasks:
-  - init: 'echo gitpod ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/gitpod
-    && chmod 0440 /etc/sudoers.d/gitpod
-    && git submodule init
+  - init: 'git submodule init
     && git submodule update
     && ./autogen.sh
     && ./configure --enable-tracy --enable-tracy-capture
