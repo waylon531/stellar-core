@@ -15,7 +15,6 @@ WORKDIR $HOME
 #    and are provided by the /test toolchain
 RUN sudo apt-get update \
     && sudo apt-get -y install software-properties-common \
-    && sudo add-apt-repository ppa:ubuntu-toolchain-r/test \
     && sudo apt-get update
 
 # Install common compilation tools
