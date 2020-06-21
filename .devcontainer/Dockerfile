@@ -8,11 +8,11 @@ FROM ubuntu:focal
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 
-# This Dockerfile adds a non-root 'gitpod' user with sudo access. However, for Linux,
+# This Dockerfile adds a non-root 'vscode' user with sudo access. However, for Linux,
 # this user's GID/UID must match your local user UID/GID to avoid permission issues
 # with bind mounts. Update USER_UID / USER_GID if yours is not 1000. See
 # https://aka.ms/vscode-remote/containers/non-root-user for details.
-ARG USERNAME=gitpod
+ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
@@ -77,9 +77,9 @@ RUN curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubunt
 RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
 
 # Switch to non-root user
-ENV HOME=/home/gitpod
+ENV HOME=/home/vscode
 WORKDIR $HOME
-USER gitpod
+USER vscode
 
 # Use clang for its formatting and code-navigation
 ENV CC=clang

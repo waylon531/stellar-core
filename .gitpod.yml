@@ -1,14 +1,15 @@
 image:
-  file: .devcontainer/Dockerfile
+  file: .devcontainer/.gitpod.Dockerfile
   context: .devcontainer
 
 tasks:
   - init: 'git submodule init
     && git submodule update
     && ./autogen.sh
-    && ./configure --enable-tracy --enable-tracy-capture'
+    && ./configure --enable-tracy --enable-tracy-capture --enable-tracy-gui'
     command: 'echo "Welcome to the stellar-core Gitpod development environment."'
 
 vscode:
   extensions:
     - llvm-vs-code-extensions.vscode-clangd@0.1.5:VVxg4kW5VbJUP3ysCuG3Fg==
+    - xaver.clang-format
