@@ -7,11 +7,11 @@ FROM ubuntu:focal
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
 
-# This Dockerfile adds a non-root 'vscode' user with sudo access. However, for Linux,
+# This Dockerfile adds a non-root 'stellardev' user with sudo access. However, for Linux,
 # this user's GID/UID must match your local user UID/GID to avoid permission issues
 # with bind mounts. Update USER_UID / USER_GID if yours is not 1000. See
 # https://aka.ms/vscode-remote/containers/non-root-user for details.
-ARG USERNAME=vscode
+ARG USERNAME=stellardev
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
@@ -29,11 +29,9 @@ RUN apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
-    # Add the gitpod user
-    && useradd -l -u 33333 -G sudo -md /home/gitpod -s /bin/bash -p gitpod gitpod \
-    && usermod -G vscode -a gitpod \
-    && echo gitpod ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/gitpod \
-    && chmod 0440 /etc/sudoers.d/gitpod \
+    #
+    # Work around https://github.com/sudo-project/sudo/issues/42
+    && echo "Set disable_coredump false" >> /etc/sudo.conf \
     #
     # Clean up
     && apt-get autoremove -y \
@@ -71,6 +69,11 @@ ENV LC_ALL en_US.UTF-8
 RUN sudo apt-get -y install curl
 RUN curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | tar -xJf - -C /usr/local
 RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
+
+# Switch to non-root user
+ENV HOME=/home/stellardev
+WORKDIR $HOME
+USER stellardev
 
 # Use clang for its formatting and code-navigation
 ENV CC=clang
