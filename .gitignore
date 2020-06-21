@@ -19,6 +19,7 @@
 *.suo
 *.trs
 *.db
+.clangd/
 
 # sourcetrail
 *.srctrlbm
