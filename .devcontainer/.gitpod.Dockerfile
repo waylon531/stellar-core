@@ -1,5 +1,14 @@
 FROM gitpod/workspace-full-vnc:latest
 
+# Work around https://github.com/sudo-project/sudo/issues/42
+USER root
+RUN echo "Set disable_coredump false" >> /etc/sudo.conf
+
+# Switch back to non-root user
+USER gitpod
+ENV HOME=/home/gitpod
+WORKDIR $HOME
+
 # Add test tool chain
 # NOTE: newer version of the compilers are not
 #    provided by stock distributions
@@ -31,11 +40,6 @@ ENV LC_ALL en_US.UTF-8
 RUN sudo apt-get -y install curl
 RUN sudo curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | sudo tar -xJf - -C /usr/local
 RUN sudo ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
-
-# Switch to non-root user
-ENV HOME=/home/gitpod
-WORKDIR $HOME
-USER gitpod
 
 # Use clang for its formatting and code-navigation
 ENV CC=clang
