@@ -3,12 +3,11 @@ image:
   context: .devcontainer
 
 tasks:
-  - init: 'export PATH=$PATH:/usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin
-    && git submodule init
+  - init: 'git submodule init
     && git submodule update
     && ./autogen.sh
     && ./configure --enable-tracy --enable-tracy-capture
-    && bear make
+    && bear make -j8
     && make check'
     command: 'echo "Welcome to the stellar-core Gitpod development environment."'
 
