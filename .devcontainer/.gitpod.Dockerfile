@@ -9,6 +9,8 @@ USER gitpod
 ENV HOME=/home/gitpod
 WORKDIR $HOME
 
+RUN sudo apt-get -y remove libstdc++-9-dev libstdc++ libstdc++-dev libc6-dev g++ gcc
+
 # Add test tool chain
 # NOTE: newer version of the compilers are not
 #    provided by stock distributions
@@ -19,7 +21,6 @@ RUN sudo apt-get update \
     && sudo apt-get update
 
 # Install common compilation tools
-RUN sudo apt-get -y remove libstdc++-9-dev libstdc++ libstdc++-dev
 RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel bear
 
 # Update compiler tools
