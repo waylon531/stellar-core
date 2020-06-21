@@ -1,3 +1,5 @@
 {
-    "clangd.path": "/usr/bin/clangd"
+    "clangd.path": "/usr/bin/clangd",
+    "editor.rulers": [ 80 ],
+    "editor.formatOnSave": true
 }
