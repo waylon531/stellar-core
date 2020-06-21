@@ -3,10 +3,7 @@ image:
   context: .devcontainer
 
 tasks:
-  - init: 'git submodule init
-    && git submodule update
-    && ./autogen.sh
-    && ./configure --enable-tracy --enable-tracy-capture'
+  - init: "pwd"
     command: 'echo "Welcome to the stellar-core Gitpod development environment."'
 
 vscode:

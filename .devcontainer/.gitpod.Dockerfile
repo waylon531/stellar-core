@@ -39,3 +39,11 @@ ENV LC_ALL en_US.UTF-8
 RUN sudo apt-get -y install curl
 RUN sudo curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | sudo tar -xJf - -C /usr/local
 RUN sudo ln -sf /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
+
+# Get code navigation going by running a build and generating
+# compile_commands.json
+RUN git submodule init
+RUN git submodule update
+RUN ./autogen.sh
+RUN ./configure --enable-tracy --enable-tracy-capture
+RUN time bear make
