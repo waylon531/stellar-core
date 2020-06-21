@@ -6,6 +6,7 @@ FROM ubuntu:focal
 
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN=true
 
 # This Dockerfile adds a non-root 'stellardev' user with sudo access. However, for Linux,
 # this user's GID/UID must match your local user UID/GID to avoid permission issues
@@ -83,3 +84,4 @@ ENV CXXFLAGS="$CFLAGS -stdlib=libc++ -I/usr/include/libcxxabi"
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
+ENV DEBCONF_NONINTERACTIVE_SEEN=
