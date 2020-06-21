@@ -14,7 +14,7 @@ WORKDIR $HOME
 #    provided by stock distributions
 #    and are provided by the /test toolchain
 RUN sudo apt-get update \
-    && sudo apt-get -y install software-properties-common \
+    && sudo apt-get -y install apt-utils software-properties-common \
     && sudo apt-get update
 
 # Install common compilation tools
