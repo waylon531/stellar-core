@@ -9,8 +9,6 @@ USER gitpod
 ENV HOME=/home/gitpod
 WORKDIR $HOME
 
-RUN sudo apt-get -y remove libstdc++-9-dev libstdc++ libstdc++-dev libc6-dev g++ gcc
-
 # Add test tool chain
 # NOTE: newer version of the compilers are not
 #    provided by stock distributions
@@ -48,3 +46,4 @@ ENV CC=clang
 ENV CXX=clang++
 ENV CFLAGS="-O3 -g1 -fno-omit-frame-pointer"
 ENV CXXFLAGS="$CFLAGS -stdlib=libc++ -I/usr/include/libcxxabi"
+ENV LDFLAGS="$LDFLAGS -stdlib=libc++"
