@@ -10,3 +10,7 @@ tasks:
     && bear make
     && make check'
     command: 'echo "Welcome to the stellar-core Gitpod development environment."'
+
+vscode:
+  extensions:
+    - llvm-vs-code-extensions.vscode-clangd@0.1.5:VVxg4kW5VbJUP3ysCuG3Fg==
