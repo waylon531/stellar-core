@@ -2,7 +2,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
-FROM ubuntu:xenial
+FROM ubuntu:focal
 
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
@@ -53,8 +53,7 @@ RUN sudo apt-get update \
 RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel bear
 
 # Update compiler tools
-RUN sudo apt-get -y install gcc-6 g++-6 cpp-6 libstdc++6
-RUN sudo apt-get -y install libc++-dev libc++abi-dev
+RUN sudo apt-get -y install clang clangd clang-tools libc++-dev libc++abi-dev
 
 # Install postgresql to enable tests under make check
 RUN sudo apt-get -y install postgresql
@@ -71,9 +70,6 @@ ENV LC_ALL en_US.UTF-8
 # (For now, our standard is an old version of clang-format, 5.0.2)
 RUN sudo apt-get -y install curl
 RUN curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | tar -xJf - -C /usr/local
-RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang /usr/bin
-RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang++ /usr/bin
-RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clangd /usr/bin
 RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
 
 # Use clang for its formatting and code-navigation
