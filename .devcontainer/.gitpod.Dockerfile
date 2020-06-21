@@ -19,6 +19,7 @@ RUN sudo apt-get update \
     && sudo apt-get update
 
 # Install common compilation tools
+RUN sudo apt-get -y remove libstdc++-9-dev libstdc++ libstdc++-dev libstdc++-6
 RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel bear
 
 # Update compiler tools
