@@ -27,5 +27,5 @@
 	// "postCreateCommand": "uname -a",
 
 	// Add the IDs of extensions you want installed when the container is created in the array below.
-	"extensions": [ " llvm-vs-code-extensions.vscode-clangd" ]
+	"extensions": [ "llvm-vs-code-extensions.vscode-clangd" ]
 }
