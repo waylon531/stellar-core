@@ -81,7 +81,6 @@ ENV CC=clang
 ENV CXX=clang++
 ENV CFLAGS="-O3 -g1 -fno-omit-frame-pointer"
 ENV CXXFLAGS="$CFLAGS -stdlib=libc++ -I/usr/include/libcxxabi"
-ENV LDFLAGS="-lc++"
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
