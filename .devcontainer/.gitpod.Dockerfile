@@ -42,6 +42,7 @@ RUN sudo ln -sf /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/cl
 
 # Get code navigation going by running a build and generating
 # compile_commands.json
+WORKDIR /workspace/stellar-core
 RUN git submodule init
 RUN git submodule update
 RUN ./autogen.sh
