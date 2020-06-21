@@ -6,9 +6,7 @@ tasks:
   - init: 'git submodule init
     && git submodule update
     && ./autogen.sh
-    && ./configure --enable-tracy --enable-tracy-capture
-    && bear make -j8
-    && make check'
+    && ./configure --enable-tracy --enable-tracy-capture'
     command: 'echo "Welcome to the stellar-core Gitpod development environment."'
 
 vscode:
