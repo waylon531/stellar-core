@@ -54,11 +54,7 @@ RUN sudo apt-get -y install git build-essential pkg-config autoconf automake lib
 
 # Update compiler tools
 RUN sudo apt-get -y install gcc-6 g++-6 cpp-6 libstdc++6
-RUN sudo apt-get -y install clang libc++-dev libc++abi-dev
-ENV CC=clang
-ENV CXX=clang++
-ENV CFLAGS="-O3 -g1 -fno-omit-frame-pointer"
-ENV CXXFLAGS="$CFLAGS -stdlib=libc++"
+RUN sudo apt-get -y install libc++-dev libc++abi-dev
 
 # Install postgresql to enable tests under make check
 RUN sudo apt-get -y install postgresql
@@ -75,8 +71,17 @@ ENV LC_ALL en_US.UTF-8
 # (For now, our standard is an old version of clang-format, 5.0.2)
 RUN sudo apt-get -y install curl
 RUN curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | tar -xJf - -C /usr/local
+RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang /usr/bin
+RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang++ /usr/bin
 RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clangd /usr/bin
 RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
+
+# Use clang for its formatting and code-navigation
+ENV CC=clang
+ENV CXX=clang++
+ENV CFLAGS="-O3 -g1 -fno-omit-frame-pointer"
+ENV CXXFLAGS="$CFLAGS -stdlib=libc++ -I/usr/include/libcxxabi"
+ENV LDFLAGS="-lc++"
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
