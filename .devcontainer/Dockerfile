@@ -25,10 +25,15 @@ RUN apt-get update \
     # Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.
     && groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    # [Optional] Add sudo support for the non-root user
+    # [Optional] Add sudo support for the non-root users
     && apt-get install -y sudo \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
+    # Add the gitpod user
+    && useradd -l -u 33333 -G sudo -md /home/gitpod -s /bin/bash -p gitpod gitpod \
+    && usermod -G vscode -a gitpod \
+    && echo gitpod ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/gitpod \
+    && chmod 0440 /etc/sudoers.d/gitpod \
     #
     # Clean up
     && apt-get autoremove -y \
@@ -45,7 +50,7 @@ RUN sudo apt-get update \
     && sudo apt-get update
 
 # Install common compilation tools
-RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel
+RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel bear
 
 # Update compiler tools
 RUN sudo apt-get -y install gcc-6 g++-6 cpp-6 libstdc++6
@@ -62,6 +67,12 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
+
+# Install clangd for code navigation and clang-format for formatting, and link them into a directory in the $PATH
+RUN sudo apt-get -y install curl
+RUN curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | tar -xJf - -C /usr/local
+RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clangd /usr/bin
+RUN ln -s /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=

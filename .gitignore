@@ -21,7 +21,6 @@
 *.db
 
 # sourcetrail
-compile_commands.json
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
