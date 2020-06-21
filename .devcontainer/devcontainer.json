@@ -20,7 +20,7 @@
 		"terminal.integrated.shell.linux": "/bin/bash"
 	},
 
-	"remoteUser": [ "stellardev" ],
+	"remoteUser": "stellardev",
 
 	// Uncomment the next line if you want to publish any ports.
 	// "appPort": [],
