@@ -8,7 +8,8 @@ tasks:
       && git submodule update
       && ./autogen.sh
       && ./configure --enable-tracy --enable-tracy-capture
-      && time bear make
+      && bear make
+      && make check
   - command: echo "Welcome to the stellar-core Gitpod development environment."
 
 vscode:
