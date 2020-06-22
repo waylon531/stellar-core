@@ -26,6 +26,9 @@ RUN sudo apt-get -y install clang clangd clang-tools libc++-dev libc++abi-dev
 # Install postgresql to enable tests under make check
 RUN sudo apt-get -y install postgresql
 
+# Install electron dependencies for GUI apps over noVNC
+RUN sudo apt-get install -y libasound2-dev libgtk-3-dev libnss3-dev
+
 # Set up locale
 RUN sudo sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && sudo locale-gen
