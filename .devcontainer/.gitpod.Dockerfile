@@ -27,6 +27,9 @@ RUN sudo apt-get -y install postgresql
 # Install electron dependencies for GUI apps over noVNC
 RUN sudo apt-get install -y libasound2-dev libgtk-3-dev libnss3-dev
 
+# Install some other potential dependencies for GUI apps
+RUN sudo apt-get install libcapstone-dev libfreetype6-dev libglfw3-dev libgtk2.0-dev libgtk-3-0
+
 # Set up locale
 RUN sudo sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && sudo locale-gen
