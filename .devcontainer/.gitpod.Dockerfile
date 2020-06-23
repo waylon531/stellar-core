@@ -13,6 +13,11 @@ WORKDIR $HOME
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 
+# Try to suppress any future interactive tzdata installation nonsense
+RUN sudo ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
+    && sudo apt-get -y install tzdata \
+    && sudo dpkg-reconfigure --frontend noninteractive tzdata
+
 # Add test tool chain
 # NOTE: newer version of the compilers are not
 #    provided by stock distributions
