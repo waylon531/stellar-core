@@ -23,11 +23,6 @@ RUN apt-get update \
     # Verify git, process tools, lsb-release (common in install instructions for CLIs) installed
     && apt-get -y install git iproute2 procps lsb-release \
     #
-    # Try to suppress any future interactive tzdata installation nonsense
-    && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
-    && apt-get -y install tzdata \
-    && dpkg-reconfigure --frontend noninteractive tzdata \
-    #
     # Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.
     && groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
@@ -55,8 +50,6 @@ RUN sudo apt-get update \
 
 # Install common compilation tools
 RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel bear
-
-# Update compiler tools
 RUN sudo apt-get -y install clang clangd clang-tools libc++-dev libc++abi-dev
 
 # Install postgresql to enable tests under make check
@@ -69,18 +62,18 @@ RUN sudo apt-get install -y libasound2-dev libgtk-3-dev libnss3-dev
 RUN sudo apt-get install -y libcapstone-dev libfreetype6-dev libglfw3-dev libgtk2.0-dev libgtk-3-0
 
 # Set up locale
-RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
-    && locale-gen
+RUN sudo sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
+    && sudo locale-gen
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-# Install clangd for code navigation and clang-format for formatting, and link them into a directory in the $PATH
+# Install clang-format for formatting, and link it into a directory in the $PATH
 # (For now, our standard is an old version of clang-format, 5.0.2)
 RUN sudo apt-get -y install curl
-RUN curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | tar -xJf - -C /usr/local
-RUN ln -sf /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
+RUN sudo curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | sudo tar -xJf - -C /usr/local
+RUN sudo ln -sf /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
 
 # Switch to non-root user
 ENV HOME=/home/vscode

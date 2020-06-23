@@ -9,12 +9,18 @@ USER gitpod
 ENV HOME=/home/gitpod
 WORKDIR $HOME
 
+# Avoid warnings by switching to noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN=true
+
 # Add test tool chain
 # NOTE: newer version of the compilers are not
 #    provided by stock distributions
 #    and are provided by the /test toolchain
 RUN sudo apt-get update \
-    && sudo apt-get -y install apt-utils software-properties-common \
+    && sudo apt-get -y install --no-install-recommends apt-utils dialog 2>&1 \
+    && sudo apt-get -y install software-properties-common \
+    && sudo apt-get -y install git iproute2 procps lsb-release \
     && sudo apt-get update
 
 # Install common compilation tools
@@ -43,3 +49,13 @@ ENV LC_ALL en_US.UTF-8
 RUN sudo apt-get -y install curl
 RUN sudo curl https://releases.llvm.org/5.0.2/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04.tar.xz | sudo tar -xJf - -C /usr/local
 RUN sudo ln -sf /usr/local/clang+llvm-5.0.2-x86_64-linux-gnu-ubuntu-16.04/bin/clang-format /usr/bin
+
+# Use clang for its formatting and code-navigation
+ENV CC=clang
+ENV CXX=clang++
+ENV CFLAGS="-O3 -g1 -fno-omit-frame-pointer"
+ENV CXXFLAGS="$CFLAGS -stdlib=libc++ -I/usr/include/libcxxabi"
+
+# Switch back to dialog for any ad-hoc use of apt-get
+ENV DEBIAN_FRONTEND=
+ENV DEBCONF_NONINTERACTIVE_SEEN=
