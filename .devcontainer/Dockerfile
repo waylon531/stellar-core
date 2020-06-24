@@ -85,11 +85,9 @@ ENV HOME=/home/vscode
 WORKDIR $HOME
 USER vscode
 
-# Use clang for its formatting and code-navigation
-ENV CC=clang
-ENV CXX=clang++
+# Choose some default compiler flags
 ENV CFLAGS="-O3 -g1 -fno-omit-frame-pointer"
-ENV CXXFLAGS="$CFLAGS -stdlib=libc++ -I/usr/include/libcxxabi"
+ENV CXXFLAGS="$CFLAGS"
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=
