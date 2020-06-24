@@ -15,7 +15,6 @@ tasks:
 vscode:
   extensions:
     - llvm-vs-code-extensions.vscode-clangd@0.1.5:VVxg4kW5VbJUP3ysCuG3Fg==
-    - xaver.clang-format
 
 github:
   prebuilds:
