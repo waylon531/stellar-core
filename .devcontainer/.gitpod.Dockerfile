@@ -30,7 +30,7 @@ RUN sudo apt-get update \
 
 # Install common compilation tools
 RUN sudo apt-get -y install git build-essential pkg-config autoconf automake libtool bison flex libpq-dev parallel bear
-RUN sudo apt-get -y install clang clangd clang-tools libc++-dev libc++abi-dev
+RUN sudo apt-get -y install clang clangd clang-tools libc++-dev libc++abi-dev ccache nvim
 
 # Install postgresql to enable tests under make check
 RUN sudo apt-get -y install postgresql

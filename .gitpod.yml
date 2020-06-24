@@ -7,7 +7,7 @@ tasks:
       git submodule init
       && git submodule update
       && ./autogen.sh
-      && ./configure --enable-tracy --enable-tracy-capture --enable-tracy-gui
+      && ./configure --enable-ccache --enable-tracy --enable-tracy-capture --enable-tracy-gui
       && bear make
       && make check
   - command: echo "Welcome to the stellar-core Gitpod development environment."
