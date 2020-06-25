@@ -29,7 +29,6 @@ compile_commands.json
 # text editors
 *~
 *.swp
-**/.vscode/*
 
 .libs
 .deps
