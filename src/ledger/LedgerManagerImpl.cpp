@@ -624,10 +624,10 @@ LedgerManagerImpl::closeLedger(LedgerCloseData const& ledgerData)
         case Upgrades::UpgradeValidity::VALID:
             break;
         case Upgrades::UpgradeValidity::XDR_INVALID:
-            throw std::runtime_error("Unknown upgrade at index " +
+            throw std::runtime_error(std::string("Unknown upgrade at index ") +
                                      std::to_string(i));
         case Upgrades::UpgradeValidity::INVALID:
-            throw std::runtime_error("Invalid upgrade at index " +
+            throw std::runtime_error(std::string("Invalid upgrade at index ") +
                                      std::to_string(i) + ": " +
                                      xdr::xdr_to_string(lupgrade));
         }
