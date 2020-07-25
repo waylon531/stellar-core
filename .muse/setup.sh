@@ -1,2 +1,2 @@
 apt-get update
-apt-get install libpq-dev
+apt-get install -y libpq-dev
